@@ -21,7 +21,10 @@ describe('getJson', () => {
   })
 
   it('relit le cache de session après un rechargement', async () => {
-    vi.stubGlobal('fetch', vi.fn(() => reponse({ n: 42 })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => reponse({ n: 42 })),
+    )
     await getJson('https://exemple.test/b', { service: 'Test' })
     viderCache() // simule un rechargement de page : la mémoire est perdue, la session reste
     const fetch = vi.fn(() => reponse({ n: 0 }))
@@ -31,23 +34,36 @@ describe('getJson', () => {
   })
 
   it("donne un message lisible en cas d'erreur HTTP, et ne garde pas l'échec en cache", async () => {
-    vi.stubGlobal('fetch', vi.fn(() => reponse({}, 503)))
-    await expect(getJson('https://exemple.test/c', { service: 'Géorisques' })).rejects.toThrow('Géorisques : erreur 503')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => reponse({}, 503)),
+    )
+    await expect(getJson('https://exemple.test/c', { service: 'Géorisques' })).rejects.toThrow(
+      'Géorisques : erreur 503',
+    )
     const fetch = vi.fn(() => reponse({ repare: true }))
     vi.stubGlobal('fetch', fetch)
     expect(await getJson('https://exemple.test/c', { service: 'Géorisques' })).toEqual({ repare: true })
   })
 
   it('signale un délai dépassé', async () => {
-    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new DOMException('trop long', 'TimeoutError'))))
-    const err = (await getJson('https://exemple.test/d', { service: 'API Carto' }).catch((e: unknown) => e)) as ErreurReseau
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new DOMException('trop long', 'TimeoutError'))),
+    )
+    const err = (await getJson('https://exemple.test/d', { service: 'API Carto' }).catch(
+      (e: unknown) => e,
+    )) as ErreurReseau
     expect(err).toBeInstanceOf(ErreurReseau)
     expect(err.message).toBe('API Carto ne répond pas (délai dépassé)')
   })
 
-  it("abandonne côté appelant sans casser le cache partagé", async () => {
+  it('abandonne côté appelant sans casser le cache partagé', async () => {
     let finir!: (v: Response) => void
-    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((r) => (finir = r))))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>((r) => (finir = r))),
+    )
     const ctrl = new AbortController()
     const premier = getJson('https://exemple.test/e', { service: 'Test', signal: ctrl.signal })
     const second = getJson('https://exemple.test/e', { service: 'Test' })

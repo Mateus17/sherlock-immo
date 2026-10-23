@@ -14,7 +14,9 @@ const zonesSensibles = computed(() => props.urbanisme?.voisines.filter((z) => !/
     <h3 id="titre-terrain">Terrain et urbanisme</h3>
     <dl class="grid">
       <dt>Parcelle</dt>
-      <dd>{{ parcelle.section }} {{ parcelle.numero }} <small class="muted">{{ parcelle.idu }}</small></dd>
+      <dd>
+        {{ parcelle.section }} {{ parcelle.numero }} <small class="muted">{{ parcelle.idu }}</small>
+      </dd>
       <dt>Surface cadastrale</dt>
       <dd>{{ nombre(parcelle.contenance) }} m²</dd>
       <template v-if="urbanisme?.zone">
@@ -22,7 +24,13 @@ const zonesSensibles = computed(() => props.urbanisme?.voisines.filter((z) => !/
         <dd>
           {{ urbanisme.zone.libelle }}
           <small v-if="urbanisme.zone.libelong" class="muted">{{ urbanisme.zone.libelong }}</small>
-          <a v-if="urbanisme.zone.reglement" :href="urbanisme.zone.reglement" target="_blank" rel="noopener" class="small">
+          <a
+            v-if="urbanisme.zone.reglement"
+            :href="urbanisme.zone.reglement"
+            target="_blank"
+            rel="noopener"
+            class="small"
+          >
             Règlement ↗
           </a>
         </dd>
@@ -36,6 +44,8 @@ const zonesSensibles = computed(() => props.urbanisme?.voisines.filter((z) => !/
         </dd>
       </template>
     </dl>
-    <p class="muted small">Contour de la parcelle tracé sur la carte. Un bien peut s'étendre sur plusieurs parcelles.</p>
+    <p class="muted small">
+      Contour de la parcelle tracé sur la carte. Un bien peut s'étendre sur plusieurs parcelles.
+    </p>
   </section>
 </template>

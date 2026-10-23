@@ -8,7 +8,8 @@ import DpeBadge from './DpeBadge.vue'
 const props = defineProps<{ results: Dpe[]; selectedId: string | null }>()
 const emit = defineEmits<{ select: [id: string] }>()
 
-type SortKey = 'date_etablissement_dpe' | 'etiquette_dpe' | 'surface_habitable_logement' | 'annee_construction' | 'adresse_ban'
+type SortKey =
+  'date_etablissement_dpe' | 'etiquette_dpe' | 'surface_habitable_logement' | 'annee_construction' | 'adresse_ban'
 const sortKey = ref<SortKey>('date_etablissement_dpe')
 const sortDir = ref<1 | -1>(-1)
 
@@ -79,7 +80,12 @@ function copy(text?: string) {
           @click="emit('select', d.numero_dpe)"
         >
           <td class="addr">
-            <button type="button" class="open" :aria-current="d.numero_dpe === selectedId" @click.stop="emit('select', d.numero_dpe)">
+            <button
+              type="button"
+              class="open"
+              :aria-current="d.numero_dpe === selectedId"
+              @click.stop="emit('select', d.numero_dpe)"
+            >
               {{ d.adresse_ban ?? 'Adresse inconnue' }}
             </button>
             <small v-if="d.complement_adresse_logement || d.type_batiment">
@@ -104,14 +110,22 @@ function copy(text?: string) {
             >
               {{ estFavori(d.numero_dpe) ? '★' : '☆' }}
             </button>
-            <button type="button" title="Copier l'adresse" :aria-label="`Copier l'adresse ${d.adresse_ban ?? ''}`" @click="copy(d.adresse_ban)">⧉</button>
+            <button
+              type="button"
+              title="Copier l'adresse"
+              :aria-label="`Copier l'adresse ${d.adresse_ban ?? ''}`"
+              @click="copy(d.adresse_ban)"
+            >
+              ⧉
+            </button>
             <a
               :href="observatoireUrl(d.numero_dpe)"
               target="_blank"
               rel="noopener"
               title="Voir le DPE officiel"
               :aria-label="`Voir le DPE officiel de ${d.adresse_ban ?? 'ce logement'} (nouvel onglet)`"
-            >↗</a>
+              >↗</a
+            >
           </td>
         </tr>
       </tbody>

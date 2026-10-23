@@ -41,7 +41,9 @@ const couts = computed(() => {
     <ul class="bars">
       <li v-for="p in pertes" :key="p.label">
         <span class="bar-label">{{ p.label }}</span>
-        <span class="bar" role="img" :aria-label="`${p.pct.toFixed(0)} %`"><span :style="{ width: `${p.pct}%` }"></span></span>
+        <span class="bar" role="img" :aria-label="`${p.pct.toFixed(0)} %`"
+          ><span :style="{ width: `${p.pct}%` }"></span
+        ></span>
         <span class="bar-value" aria-hidden="true">{{ p.pct.toFixed(0) }} %</span>
       </li>
     </ul>
@@ -52,7 +54,9 @@ const couts = computed(() => {
     <dl class="grid">
       <template v-for="[label, q] in isolation" :key="label">
         <dt>{{ label }}</dt>
-        <dd><span class="quality" :data-q="q">{{ q }}</span></dd>
+        <dd>
+          <span class="quality" :data-q="q">{{ q }}</span>
+        </dd>
       </template>
     </dl>
   </section>
@@ -108,6 +112,8 @@ const couts = computed(() => {
         <dd>{{ nombre(v) }} €/an</dd>
       </template>
     </dl>
-    <p class="muted small">Estimation conventionnelle du DPE, pas une facture réelle : demandez les factures du vendeur.</p>
+    <p class="muted small">
+      Estimation conventionnelle du DPE, pas une facture réelle : demandez les factures du vendeur.
+    </p>
   </section>
 </template>

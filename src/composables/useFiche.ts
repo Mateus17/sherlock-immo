@@ -107,7 +107,11 @@ export function useFiche(dpe: Ref<Dpe>, onParcelle: (geom: Parcelle['geometry'] 
     loading.value = false
   }
 
-  watch(() => dpe.value.numero_dpe, () => charger(dpe.value), { immediate: true })
+  watch(
+    () => dpe.value.numero_dpe,
+    () => charger(dpe.value),
+    { immediate: true },
+  )
 
   return { detail, history, oldDpes, audits, parcelle, marche, risques, urbanisme, loading, errors }
 }

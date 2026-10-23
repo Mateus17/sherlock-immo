@@ -23,12 +23,24 @@ const { form } = useCriteres()
       <div class="pair">
         <label>
           <span>Énergie</span>
-          <input :value="form.consoEp ?? ''" type="number" min="0" placeholder="ex. 142" @input="form.consoEp = nombreOuNull($event)" />
+          <input
+            :value="form.consoEp ?? ''"
+            type="number"
+            min="0"
+            placeholder="ex. 142"
+            @input="form.consoEp = nombreOuNull($event)"
+          />
           <small class="muted">kWh/m²/an</small>
         </label>
         <label>
           <span>Climat</span>
-          <input :value="form.ges ?? ''" type="number" min="0" placeholder="ex. 31" @input="form.ges = nombreOuNull($event)" />
+          <input
+            :value="form.ges ?? ''"
+            type="number"
+            min="0"
+            placeholder="ex. 31"
+            @input="form.ges = nombreOuNull($event)"
+          />
           <small class="muted">kg CO₂/m²/an</small>
         </label>
       </div>

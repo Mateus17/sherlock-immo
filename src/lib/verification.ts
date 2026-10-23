@@ -24,7 +24,13 @@ const monthsBetween = (a: string, b: string) =>
 // Même logement : même complément et même étage (utile pour les appartements)
 function sameLogement(a: Dpe, b: Dpe) {
   const k = (d: Dpe) =>
-    [d.complement_adresse_logement, d.numero_etage_appartement].map((v) => String(v ?? '').trim().toLowerCase()).join('|')
+    [d.complement_adresse_logement, d.numero_etage_appartement]
+      .map((v) =>
+        String(v ?? '')
+          .trim()
+          .toLowerCase(),
+      )
+      .join('|')
   return a.type_batiment !== 'appartement' || k(a) === k(b)
 }
 
@@ -94,11 +100,12 @@ function analyserTerritoire(ctx: Contexte): Point[] {
       points.push({
         niveau: 'alerte',
         titre: `Surface déclarée aux impôts : ${fiscale} m², contre ${s} m² au DPE`,
-        question: "Les agrandissements ont-ils fait l'objet d'un permis ou d'une déclaration, et la taxe foncière a-t-elle été mise à jour ?",
+        question:
+          "Les agrandissements ont-ils fait l'objet d'un permis ou d'une déclaration, et la taxe foncière a-t-elle été mise à jour ?",
         detail:
-          "Lors de la vente de " +
+          'Lors de la vente de ' +
           an +
-          ", la surface bâtie connue des impôts était bien plus petite. Extension ou aménagement non déclarés (taxe foncière à régulariser, permis ?) ou surface du DPE gonflée.",
+          ', la surface bâtie connue des impôts était bien plus petite. Extension ou aménagement non déclarés (taxe foncière à régulariser, permis ?) ou surface du DPE gonflée.',
       })
   }
 
@@ -115,7 +122,11 @@ function analyserTerritoire(ctx: Contexte): Point[] {
         question: 'Comment le prix a-t-il été fixé ? Sur quelles ventes comparables ?',
       })
     else if (ecart < -20)
-      points.push({ niveau: 'info', titre: `Prix ${Math.abs(ecart).toFixed(0)} % sous le quartier`, detail: `${base} Pourquoi ? Travaux, nuisances, vice ?` })
+      points.push({
+        niveau: 'info',
+        titre: `Prix ${Math.abs(ecart).toFixed(0)} % sous le quartier`,
+        detail: `${base} Pourquoi ? Travaux, nuisances, vice ?`,
+      })
     else points.push({ niveau: 'ok', titre: 'Prix dans la moyenne du quartier', detail: base })
   }
 
@@ -135,15 +146,18 @@ function analyserTerritoire(ctx: Contexte): Point[] {
       points.push({
         niveau: 'attention',
         titre: `Sols argileux : exposition ${(adresse || commune).replace(/^Risque Existant - /i, '')}`,
-        question: 'Des fissures sont-elles apparues ? Une expertise ou une déclaration de catastrophe naturelle a-t-elle eu lieu ?',
-        detail: 'Risque de fissures en période de sécheresse. Inspectez murs et angles ; une étude de sol est obligatoire pour construire.',
+        question:
+          'Des fissures sont-elles apparues ? Une expertise ou une déclaration de catastrophe naturelle a-t-elle eu lieu ?',
+        detail:
+          'Risque de fissures en période de sécheresse. Inspectez murs et angles ; une étude de sol est obligatoire pour construire.',
       })
     else if (r.cle === 'radon' && /important/i.test(adresse || commune))
       points.push({
         niveau: 'attention',
         titre: 'Potentiel radon élevé',
         question: 'Une mesure du radon a-t-elle déjà été faite ?',
-        detail: "Gaz radioactif naturel : ventilation indispensable, une mesure par dosimètre coûte quelques dizaines d'euros.",
+        detail:
+          "Gaz radioactif naturel : ventilation indispensable, une mesure par dosimètre coûte quelques dizaines d'euros.",
       })
     else if (r.cle === 'pollutionSols' && ici)
       points.push({
@@ -166,9 +180,17 @@ function analyserTerritoire(ctx: Contexte): Point[] {
   if (z) {
     const t = z.typezone.toUpperCase()
     if (t.startsWith('A') && !t.startsWith('AU'))
-      points.push({ niveau: 'attention', titre: `Zone agricole (${z.libelle}) au PLU`, detail: 'Agrandissements et annexes très encadrés.' })
+      points.push({
+        niveau: 'attention',
+        titre: `Zone agricole (${z.libelle}) au PLU`,
+        detail: 'Agrandissements et annexes très encadrés.',
+      })
     else if (t.startsWith('N'))
-      points.push({ niveau: 'attention', titre: `Zone naturelle (${z.libelle}) au PLU`, detail: 'Constructions nouvelles très limitées.' })
+      points.push({
+        niveau: 'attention',
+        titre: `Zone naturelle (${z.libelle}) au PLU`,
+        detail: 'Constructions nouvelles très limitées.',
+      })
   }
   const aUrbaniser = urbanisme?.voisines.filter((v) => v.typezone.toUpperCase().startsWith('AU')) ?? []
   if (aUrbaniser.length)
@@ -235,7 +257,10 @@ export function analyser(ctx: Contexte): Point[] {
   const anterieurs = autres.filter((h) => (h.date_etablissement_dpe ?? '') < (dpe.date_etablissement_dpe ?? ''))
   // On compare au DPE immédiatement précédent ; le nombre total de DPE est signalé à part
   if (anterieurs.length >= 2 && anterieurs[0].date_etablissement_dpe && dpe.date_etablissement_dpe) {
-    const mois = Math.max(1, Math.round(monthsBetween(anterieurs[0].date_etablissement_dpe, dpe.date_etablissement_dpe)))
+    const mois = Math.max(
+      1,
+      Math.round(monthsBetween(anterieurs[0].date_etablissement_dpe, dpe.date_etablissement_dpe)),
+    )
     points.push({
       niveau: 'attention',
       titre: `${anterieurs.length + 1} DPE pour ce logement en ${mois} mois`,
@@ -380,18 +405,23 @@ export function analyser(ctx: Contexte): Point[] {
     points.push({
       niveau: 'alerte',
       titre: 'Chauffage au fioul',
-      question: 'Quel âge a la chaudière ? Quelle est la consommation réelle de fioul par an ? La cuve est-elle enterrée ?',
+      question:
+        'Quel âge a la chaudière ? Quelle est la consommation réelle de fioul par an ? La cuve est-elle enterrée ?',
       detail:
-        "Installer une chaudière fioul neuve est interdit depuis 2022 : à remplacer par une autre énergie (pompe à chaleur, bois…). Prévoir aussi la cuve.",
+        'Installer une chaudière fioul neuve est interdit depuis 2022 : à remplacer par une autre énergie (pompe à chaleur, bois…). Prévoir aussi la cuve.',
     })
   else if (/gpl|propane|butane|charbon/i.test(energie))
-    points.push({ niveau: 'attention', titre: `Chauffage ${energie.toLowerCase()}`, detail: 'Énergie chère et carbonée.' })
+    points.push({
+      niveau: 'attention',
+      titre: `Chauffage ${energie.toLowerCase()}`,
+      detail: 'Énergie chère et carbonée.',
+    })
   else if (/gaz/i.test(energie))
     points.push({
       niveau: 'info',
       titre: 'Chauffage au gaz',
       detail: "Prix volatils ; vérifier l'âge de la chaudière.",
-      question: "Quel âge a la chaudière, et quand a-t-elle été entretenue pour la dernière fois ?",
+      question: 'Quel âge a la chaudière, et quand a-t-elle été entretenue pour la dernière fois ?',
     })
 
   // --- Isolation
@@ -408,11 +438,11 @@ export function analyser(ctx: Contexte): Point[] {
     points.push({
       niveau: 'attention',
       titre: `Isolation insuffisante : ${faibles.join(', ')}`,
-      question: "Des devis d'isolation ont-ils été demandés ? Quand l'isolation a-t-elle été refaite pour la dernière fois ?",
+      question:
+        "Des devis d'isolation ont-ils été demandés ? Quand l'isolation a-t-elle été refaite pour la dernière fois ?",
       detail: 'Postes de travaux probables. Voir la répartition des pertes de chaleur plus bas.',
     })
-  else if (parois.some(([, q]) => q))
-    points.push({ niveau: 'ok', titre: 'Aucune paroi jugée insuffisante' })
+  else if (parois.some(([, q]) => q)) points.push({ niveau: 'ok', titre: 'Aucune paroi jugée insuffisante' })
 
   if (dpe.indicateur_confort_ete === 'insuffisant')
     points.push({
@@ -455,7 +485,10 @@ export function deperditions(d: DpeDetail): { label: string; value: number; pct:
 
 export function liensExternes(lat: number, lon: number) {
   return [
-    { label: 'Vue de rue (Panoramax, couverture partielle)', url: `https://api.panoramax.xyz/#focus=map&map=19/${lat}/${lon}` },
+    {
+      label: 'Vue de rue (Panoramax, couverture partielle)',
+      url: `https://api.panoramax.xyz/#focus=map&map=19/${lat}/${lon}`,
+    },
     {
       label: 'Vue de rue (Google)',
       url: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}`,

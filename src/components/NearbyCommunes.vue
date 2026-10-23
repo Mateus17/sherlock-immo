@@ -68,7 +68,14 @@ function uncheckAll() {
 
     <template v-if="open">
       <div class="range">
-        <input v-model.number="radiusKm" type="range" min="2" max="30" step="1" aria-label="Distance maximale des communes voisines, en kilomètres" />
+        <input
+          v-model.number="radiusKm"
+          type="range"
+          min="2"
+          max="30"
+          step="1"
+          aria-label="Distance maximale des communes voisines, en kilomètres"
+        />
         <output>{{ radiusKm }} km</output>
       </div>
 

@@ -26,7 +26,9 @@ defineProps<{ marche: MarcheLocal; prix: number | null; surface?: number }>()
         Prix médian dans la section cadastrale :
         <strong>{{ nombre(marche.medianePrixM2) }} €/m²</strong>
         <span class="muted">({{ marche.comparables.length }} ventes, 3 ans)</span>
-        <template v-if="prix && surface"> · annonce : <strong>{{ nombre(prix / surface) }} €/m²</strong></template>
+        <template v-if="prix && surface">
+          · annonce : <strong>{{ nombre(prix / surface) }} €/m²</strong></template
+        >
       </p>
       <details class="small">
         <summary>Voir les ventes comparables</summary>

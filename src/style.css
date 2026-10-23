@@ -12,7 +12,12 @@
   --shadow: 0 1px 2px rgb(22 27 51 / 0.05), 0 8px 24px rgb(22 27 51 / 0.06);
   --rainbow: linear-gradient(90deg, #009c6d, #52b153, #a5cc74, #f4e70f, #f0b40f, #eb8235, #d7221f);
   color-scheme: light;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   line-height: 1.45;
   color: var(--text);
   background: var(--bg);

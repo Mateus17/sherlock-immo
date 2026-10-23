@@ -61,7 +61,10 @@ export async function searchCommunes(q: CommuneQuery, signal?: AbortSignal): Pro
   if (codePostal) params.set('codePostal', codePostal)
   if (dep) params.set('codeDepartement', dep)
 
-  const data = await getJson<GeoApiCommune[]>(`https://geo.api.gouv.fr/communes?${params}`, { service: 'API Géo', signal })
+  const data = await getJson<GeoApiCommune[]>(`https://geo.api.gouv.fr/communes?${params}`, {
+    service: 'API Géo',
+    signal,
+  })
 
   return data
     .filter((c) => c.centre)
@@ -107,9 +110,12 @@ async function fetchDepartementCommunes(dep: string): Promise<NearbyCommune[]> {
 async function departementAt(lat: number, lon: number): Promise<string | null> {
   // Coordonnées arrondies (~100 m) pour que le cache serve d'une recherche à l'autre
   const [la, lo] = [lat.toFixed(3), lon.toFixed(3)]
-  const [c] = await getJson<GeoApiCommune[]>(`https://geo.api.gouv.fr/communes?lat=${la}&lon=${lo}&fields=codeDepartement`, {
-    service: 'API Géo',
-  })
+  const [c] = await getJson<GeoApiCommune[]>(
+    `https://geo.api.gouv.fr/communes?lat=${la}&lon=${lo}&fields=codeDepartement`,
+    {
+      service: 'API Géo',
+    },
+  )
   return c?.codeDepartement ?? null
 }
 

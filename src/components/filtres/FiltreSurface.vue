@@ -28,7 +28,14 @@ const fmt = (n: number | null) => n?.toLocaleString('fr-FR') ?? ''
         @input="form.surfaceCible = nombreOuNull($event)"
       />
       <div class="range">
-        <input v-model.number="form.tolerancePct" type="range" min="0" max="30" step="1" aria-label="Tolérance en pourcentage" />
+        <input
+          v-model.number="form.tolerancePct"
+          type="range"
+          min="0"
+          max="30"
+          step="1"
+          aria-label="Tolérance en pourcentage"
+        />
         <output>± {{ form.tolerancePct }} %</output>
       </div>
       <p v-if="surfaceBounds[0] != null" class="hint muted" aria-live="polite">

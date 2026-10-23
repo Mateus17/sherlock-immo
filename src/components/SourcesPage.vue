@@ -74,11 +74,19 @@ const donnees: Ligne[] = [
 ]
 
 const consultation = [
-  { nom: 'Observatoire DPE-Audit', usage: 'Le DPE complet officiel, à partir de son numéro.', url: 'https://observatoire-dpe-audit.ademe.fr/' },
+  {
+    nom: 'Observatoire DPE-Audit',
+    usage: 'Le DPE complet officiel, à partir de son numéro.',
+    url: 'https://observatoire-dpe-audit.ademe.fr/',
+  },
   { nom: 'Panoramax', usage: 'Vues de rue libres et collaboratives.', url: 'https://panoramax.fr/' },
   { nom: 'Google Street View', usage: 'Vues de rue.', url: 'https://www.google.com/maps' },
   { nom: 'Géoportail', usage: 'Photo aérienne récente.', url: 'https://www.geoportail.gouv.fr/' },
-  { nom: 'Remonter le temps (IGN)', usage: 'Photos aériennes anciennes, pour repérer une extension.', url: 'https://remonterletemps.ign.fr/' },
+  {
+    nom: 'Remonter le temps (IGN)',
+    usage: 'Photos aériennes anciennes, pour repérer une extension.',
+    url: 'https://remonterletemps.ign.fr/',
+  },
 ]
 
 const logiciels = [
@@ -110,8 +118,12 @@ const logiciels = [
       <h2>Données publiques</h2>
       <p class="muted small">
         Toutes publiées sous
-        <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noopener">Licence Ouverte 2.0</a>.
-        <template v-if="updatedAt"> Base des DPE mise à jour le {{ new Date(updatedAt).toLocaleDateString('fr-FR') }}.</template>
+        <a href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/" target="_blank" rel="noopener"
+          >Licence Ouverte 2.0</a
+        >.
+        <template v-if="updatedAt">
+          Base des DPE mise à jour le {{ new Date(updatedAt).toLocaleDateString('fr-FR') }}.</template
+        >
       </p>
       <ul class="cards">
         <li v-for="d in donnees" :key="d.nom">

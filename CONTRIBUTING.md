@@ -24,11 +24,21 @@ npm run dev
 Avant de proposer une modification :
 
 ```bash
+npm run lint    # ESLint (règles Vue et TypeScript)
+npm run format  # met le code en forme (Prettier)
 npm test        # tests unitaires (Vitest)
 npm run build   # vérifie les types (vue-tsc) puis construit
 ```
 
 La même vérification tourne automatiquement sur chaque pull request.
+
+Pour vérifier l'accessibilité d'une page en développement, ouvrez la console du navigateur et lancez :
+
+```js
+await import('/node_modules/axe-core/axe.min.js'); (await axe.run()).violations
+```
+
+Le résultat doit être une liste vide.
 
 ## Principes du projet
 
@@ -63,4 +73,4 @@ La même vérification tourne automatiquement sur chaque pull request.
 2. Faites des commits courts et explicites.
 3. Ouvrez une pull request qui explique le besoin, la solution et comment vous l'avez testée (captures d'écran bienvenues pour l'interface).
 
-En contribuant, vous acceptez que votre code soit publié sous [licence MIT](LICENSE).
+En contribuant, vous acceptez que votre code soit publié sous [licence MIT](LICENSE) et vous vous engagez à respecter le [code de conduite](CODE_OF_CONDUCT.md). Pour une faille de sécurité, voir [SECURITY.md](SECURITY.md).

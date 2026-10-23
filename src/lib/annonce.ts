@@ -48,7 +48,9 @@ export function lireAnnonce(texte: string): IndicesAnnonce {
   if (ges) out.ges = nombre(ges[1])
 
   // Lettres : « DPE : D », « Classe énergie D », « GES : B »
-  const lDpe = m(/(?:classe\s+(?:énergie|energie|énergétique)|étiquette\s+(?:énergie|energie)|\bDPE)\s*[:\-–]?\s*(?:classe\s*)?\(?([A-G])\b/i)
+  const lDpe = m(
+    /(?:classe\s+(?:énergie|energie|énergétique)|étiquette\s+(?:énergie|energie)|\bDPE)\s*[:\-–]?\s*(?:classe\s*)?\(?([A-G])\b/i,
+  )
   if (lDpe) out.etiquetteDpe = lDpe[1].toUpperCase() as Etiquette
   const lGes = m(/(?:\bGES|classe\s+climat|émissions?\s+de\s+gaz[^:\n]{0,30})\s*[:\-–]?\s*(?:classe\s*)?\(?([A-G])\b/i)
   if (lGes) out.etiquetteGes = lGes[1].toUpperCase() as Etiquette
@@ -65,7 +67,9 @@ export function lireAnnonce(texte: string): IndicesAnnonce {
   if (terrain) out.terrain = nombre(terrain[1])
 
   // Surface habitable : priorité à une mention explicite, sinon la première surface hors terrain
-  const habitable = m(new RegExp(String.raw`(?:surface\s+habitable|habitables?|surface)[^\d\n]{0,20}${NB}\s*m\s*[²2]`, 'i'))
+  const habitable = m(
+    new RegExp(String.raw`(?:surface\s+habitable|habitables?|surface)[^\d\n]{0,20}${NB}\s*m\s*[²2]`, 'i'),
+  )
   if (habitable) out.surface = nombre(habitable[1])
   else {
     for (const x of t.matchAll(new RegExp(String.raw`${NB}\s*m\s*[²2](?!\s*[./]?\s*an)`, 'gi'))) {

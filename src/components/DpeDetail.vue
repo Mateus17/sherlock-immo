@@ -92,7 +92,9 @@ const imprimer = () => {
 
 <template>
   <aside ref="racine" class="detail" aria-label="Fiche du logement">
-    <p class="print-only muted small">Dossier Sherlock Immo · {{ aujourdhui }} · données publiques, à vérifier sur place</p>
+    <p class="print-only muted small">
+      Dossier Sherlock Immo · {{ aujourdhui }} · données publiques, à vérifier sur place
+    </p>
 
     <header>
       <div>
@@ -120,15 +122,21 @@ const imprimer = () => {
     <div class="labels">
       <div>
         <DpeBadge :value="dpe.etiquette_dpe" />
-        <span><strong>{{ nombre(dpe.conso_5_usages_par_m2_ep) }}</strong> kWh/m²/an</span>
+        <span
+          ><strong>{{ nombre(dpe.conso_5_usages_par_m2_ep) }}</strong> kWh/m²/an</span
+        >
       </div>
       <div>
         <DpeBadge :value="dpe.etiquette_ges" />
-        <span><strong>{{ nombre(dpe.emission_ges_5_usages_par_m2) }}</strong> kg CO₂/m²/an</span>
+        <span
+          ><strong>{{ nombre(dpe.emission_ges_5_usages_par_m2) }}</strong> kg CO₂/m²/an</span
+        >
       </div>
       <div>
         <span class="euro" aria-hidden="true">€</span>
-        <span><strong>{{ nombre(dpe.cout_total_5_usages) }}</strong> €/an estimés</span>
+        <span
+          ><strong>{{ nombre(dpe.cout_total_5_usages) }}</strong> €/an estimés</span
+        >
       </div>
     </div>
 
@@ -140,15 +148,35 @@ const imprimer = () => {
       <div class="compare">
         <label>
           <span>Surface</span>
-          <input :value="surface ?? ''" type="number" min="0" step="0.1" placeholder="m²" @input="surface = nombreOuNull($event)" />
+          <input
+            :value="surface ?? ''"
+            type="number"
+            min="0"
+            step="0.1"
+            placeholder="m²"
+            @input="surface = nombreOuNull($event)"
+          />
         </label>
         <label>
           <span>Terrain</span>
-          <input :value="terrain ?? ''" type="number" min="0" placeholder="m²" @input="terrain = nombreOuNull($event)" />
+          <input
+            :value="terrain ?? ''"
+            type="number"
+            min="0"
+            placeholder="m²"
+            @input="terrain = nombreOuNull($event)"
+          />
         </label>
         <label>
           <span>Prix</span>
-          <input :value="prix ?? ''" type="number" min="0" step="1000" placeholder="€" @input="prix = nombreOuNull($event)" />
+          <input
+            :value="prix ?? ''"
+            type="number"
+            min="0"
+            step="1000"
+            placeholder="€"
+            @input="prix = nombreOuNull($event)"
+          />
         </label>
       </div>
     </section>
@@ -160,7 +188,13 @@ const imprimer = () => {
     <FicheTerrain v-if="parcelle" :parcelle="parcelle" :urbanisme="urbanisme" />
     <FicheVentes v-if="marche" :marche="marche" :prix="prix" :surface="dpe.surface_habitable_logement" />
     <FicheRisques v-if="risques" :risques="risques" />
-    <FicheHistorique :dpe="dpe" :history="history" :old-dpes="oldDpes" :loading="loading" @open="emit('open', $event)" />
+    <FicheHistorique
+      :dpe="dpe"
+      :history="history"
+      :old-dpes="oldDpes"
+      :loading="loading"
+      @open="emit('open', $event)"
+    />
     <FicheLiens :dpe="dpe" :detail="detail" />
   </aside>
 </template>

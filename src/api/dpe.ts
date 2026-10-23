@@ -110,7 +110,10 @@ export type Periode = (typeof PERIODES)[number]
 
 // Énergie principale de chauffage, regroupée en familles lisibles
 export const ENERGIES = {
-  electricite: { label: 'Électricité', valeurs: ['Électricité', "Électricité d'origine renouvelable utilisée dans le bâtiment"] },
+  electricite: {
+    label: 'Électricité',
+    valeurs: ['Électricité', "Électricité d'origine renouvelable utilisée dans le bâtiment"],
+  },
   gaz: { label: 'Gaz', valeurs: ['Gaz naturel'] },
   bois: {
     label: 'Bois',
@@ -205,7 +208,11 @@ export async function searchDpe(filters: DpeFilters, signal?: AbortSignal): Prom
       for (const c of filters.communes) {
         const p = new URLSearchParams(base)
         p.set('geo_distance', `${c.lon},${c.lat},${filters.rayonKm}km`)
-        requests.push({ label: `${c.nom} + ${filters.rayonKm} km${suffix}`, source, url: `${SOURCES[source]}/lines?${p}` })
+        requests.push({
+          label: `${c.nom} + ${filters.rayonKm} km${suffix}`,
+          source,
+          url: `${SOURCES[source]}/lines?${p}`,
+        })
       }
     } else {
       const p = new URLSearchParams(base)
@@ -221,7 +228,12 @@ export async function searchDpe(filters: DpeFilters, signal?: AbortSignal): Prom
   const responses = await Promise.all(requests.map((r) => fetchLines(r.url, signal)))
   return {
     results: dedupe(responses.flatMap((r, i) => tag(r.results, requests[i].source))),
-    zones: responses.map((r, i) => ({ label: requests[i].label, source: requests[i].source, total: r.total, next: r.next })),
+    zones: responses.map((r, i) => ({
+      label: requests[i].label,
+      source: requests[i].source,
+      total: r.total,
+      next: r.next,
+    })),
   }
 }
 
@@ -282,7 +294,11 @@ export function latestPerAddress(list: Dpe[]): Dpe[] {
       continue
     }
     const key = [d.adresse_ban, d.complement_adresse_logement, d.numero_etage_appartement]
-      .map((v) => String(v ?? '').trim().toLowerCase())
+      .map((v) =>
+        String(v ?? '')
+          .trim()
+          .toLowerCase(),
+      )
       .join('|')
     const current = byKey.get(key)
     if (!current || (d.date_etablissement_dpe ?? '') > (current.date_etablissement_dpe ?? '')) byKey.set(key, d)
@@ -382,7 +398,10 @@ export interface DpeDetail extends Dpe {
 }
 
 // Champs de la fiche absents de la base des neufs (un select inconnu renvoie une erreur 400)
-const ABSENTS_NEUF = new Set(['qualite_isolation_plancher_haut_comble_perdu', 'qualite_isolation_plancher_haut_toit_terrasse'])
+const ABSENTS_NEUF = new Set([
+  'qualite_isolation_plancher_haut_comble_perdu',
+  'qualite_isolation_plancher_haut_toit_terrasse',
+])
 
 export async function getDpeDetail(
   numero: string,

@@ -4,7 +4,12 @@ import type { Niveau, Point } from '../../lib/verification'
 defineProps<{ points: Point[] }>()
 
 const ICONES: Record<Niveau, string> = { alerte: '⚠', attention: '!', info: 'i', ok: '✓' }
-const LIBELLES: Record<Niveau, string> = { alerte: 'Alerte', attention: 'Attention', info: 'Information', ok: 'Vérifié' }
+const LIBELLES: Record<Niveau, string> = {
+  alerte: 'Alerte',
+  attention: 'Attention',
+  info: 'Information',
+  ok: 'Vérifié',
+}
 </script>
 
 <template>

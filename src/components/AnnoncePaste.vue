@@ -35,10 +35,14 @@ function analyser() {
       ></textarea>
       <div class="actions">
         <button type="button" class="primary" :disabled="!texte.trim()" @click="analyser">Remplir les critères</button>
-        <button type="button" @click="(open = false), (texte = ''), (vide = false)">Fermer</button>
+        <button type="button" @click="((open = false), (texte = ''), (vide = false))">Fermer</button>
       </div>
-      <p v-if="vide" class="muted small">Aucun indice reconnu. Vérifiez que le texte contient la surface ou l'encadré énergie.</p>
-      <p v-else-if="bilan?.length" class="ok small">✓ Rempli : {{ bilan.join(', ') }}. Vérifiez puis lancez la recherche.</p>
+      <p v-if="vide" class="muted small">
+        Aucun indice reconnu. Vérifiez que le texte contient la surface ou l'encadré énergie.
+      </p>
+      <p v-else-if="bilan?.length" class="ok small">
+        ✓ Rempli : {{ bilan.join(', ') }}. Vérifiez puis lancez la recherche.
+      </p>
       <p class="muted small">Le texte est analysé dans votre navigateur, il n'est envoyé nulle part.</p>
     </template>
   </section>

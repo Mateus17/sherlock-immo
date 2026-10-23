@@ -21,7 +21,7 @@ const outputs = [
 ]
 
 for (const { file, src, size } of outputs) {
-  await sharp(Buffer.from(src), { density: (72 * size) / 512 * 4 })
+  await sharp(Buffer.from(src), { density: ((72 * size) / 512) * 4 })
     .resize(size, size)
     .png()
     .toFile(new URL(file, dir).pathname)
@@ -29,9 +29,14 @@ for (const { file, src, size } of outputs) {
 }
 
 // Image d'aperçu (Open Graph) : 1200×630, logo + nom + accroche + bande A → G
-const logo = svg.replace('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">', '<svg x="110" y="155" width="320" height="320" viewBox="0 0 512 512">')
+const logo = svg.replace(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">',
+  '<svg x="110" y="155" width="320" height="320" viewBox="0 0 512 512">',
+)
 const colors = ['#009c6d', '#52b153', '#a5cc74', '#f4e70f', '#f0b40f', '#eb8235', '#d7221f']
-const bande = colors.map((c, i) => `<rect x="${(i * 1200) / 7}" y="0" width="${1200 / 7 + 1}" height="14" fill="${c}" />`).join('')
+const bande = colors
+  .map((c, i) => `<rect x="${(i * 1200) / 7}" y="0" width="${1200 / 7 + 1}" height="14" fill="${c}" />`)
+  .join('')
 const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
     <linearGradient id="ogbg" x1="0" y1="0" x2="1" y2="1">

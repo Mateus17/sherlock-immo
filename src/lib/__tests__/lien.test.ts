@@ -38,7 +38,14 @@ describe('lien partageable', () => {
   })
 
   it('gère la fourchette de surface et la date exacte', () => {
-    const c: Criteres = { ...base, surfaceMode: 'fourchette', surfaceMin: 90, surfaceMax: 110, dateExacte: true, inclureNeufs: false }
+    const c: Criteres = {
+      ...base,
+      surfaceMode: 'fourchette',
+      surfaceMin: 90,
+      surfaceMax: 110,
+      dateExacte: true,
+      inclureNeufs: false,
+    }
     const back = depuisParams(versParams(c))!
     expect(back.surfaceMode).toBe('fourchette')
     expect([back.surfaceMin, back.surfaceMax]).toEqual([90, 110])

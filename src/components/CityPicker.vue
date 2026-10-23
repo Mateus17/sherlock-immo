@@ -91,12 +91,14 @@ function onKeydown(e: KeyboardEvent) {
         aria-autocomplete="list"
         aria-controls="liste-communes"
         :aria-expanded="open"
-        :aria-activedescendant="open && suggestions[highlighted] ? `commune-${suggestions[highlighted].code}` : undefined"
+        :aria-activedescendant="
+          open && suggestions[highlighted] ? `commune-${suggestions[highlighted].code}` : undefined
+        "
         placeholder="Ville, ville + n° dépt, code postal…"
         autocomplete="off"
         @keydown="onKeydown"
-        @focus="(focused = true), (open = suggestions.length > 0)"
-        @blur="(focused = false), (open = false)"
+        @focus="((focused = true), (open = suggestions.length > 0))"
+        @blur="((focused = false), (open = false))"
       />
     </div>
     <ul v-if="open" id="liste-communes" class="suggestions" role="listbox" aria-label="Communes proposées">
@@ -114,7 +116,9 @@ function onKeydown(e: KeyboardEvent) {
         <span>{{ c.codesPostaux.slice(0, 3).join(', ') }} · {{ c.departement }}</span>
       </li>
       <li v-if="!suggestions.length" class="hint muted" role="presentation" @mousedown.prevent>
-        Aucune commune trouvée{{ parseCommuneQuery(query).dep ? ` dans le département « ${parseCommuneQuery(query).dep} »` : '' }}
+        Aucune commune trouvée{{
+          parseCommuneQuery(query).dep ? ` dans le département « ${parseCommuneQuery(query).dep} »` : ''
+        }}
       </li>
       <li v-if="hint" class="hint muted" role="presentation" @mousedown.prevent>{{ hint }}</li>
     </ul>

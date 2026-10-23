@@ -108,7 +108,11 @@ export interface Urbanisme {
 export async function getUrbanisme(lat: number, lon: number, signal?: AbortSignal): Promise<Urbanisme> {
   const [ici, autour] = await Promise.all([
     get<{ features: ZoneFeature[] }>(`${APICARTO}/gpu/zone-urba?geom=${pointGeom(lat, lon)}`, 'Urbanisme', signal),
-    get<{ features: ZoneFeature[] }>(`${APICARTO}/gpu/zone-urba?geom=${squareGeom(lat, lon, 150)}`, 'Urbanisme', signal),
+    get<{ features: ZoneFeature[] }>(
+      `${APICARTO}/gpu/zone-urba?geom=${squareGeom(lat, lon, 150)}`,
+      'Urbanisme',
+      signal,
+    ),
   ])
   const zone = ici.features[0] ? toZone(ici.features[0]) : null
   const seen = new Set<string>(zone ? [zone.libelle] : [])

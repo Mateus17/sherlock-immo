@@ -2,7 +2,15 @@
 // Format court et lisible : ?c=35238,35047&dpe=CD&s=120&tol=5&kwh=142&co2=31
 // Seules les valeurs différentes du défaut sont écrites.
 
-import { ENERGIES, ETIQUETTES, PERIODES, type Energie, type Etiquette, type Periode, type TypeBatiment } from '../api/dpe'
+import {
+  ENERGIES,
+  ETIQUETTES,
+  PERIODES,
+  type Energie,
+  type Etiquette,
+  type Periode,
+  type TypeBatiment,
+} from '../api/dpe'
 
 export interface Criteres {
   communes: string[] // codes INSEE
