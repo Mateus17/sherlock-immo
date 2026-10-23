@@ -27,7 +27,12 @@ import {
 import { analyser, deperditions, liensExternes, type Niveau } from '../lib/verification'
 import DpeBadge from './DpeBadge.vue'
 
-const props = defineProps<{ dpe: Dpe; surfaceAnnonce: number | null }>()
+const props = defineProps<{
+  dpe: Dpe
+  surfaceAnnonce: number | null
+  terrainAnnonce?: number | null
+  prixAnnonce?: number | null
+}>()
 const emit = defineEmits<{ close: []; open: [dpe: Dpe]; parcelle: [geometry: Parcelle['geometry'] | null] }>()
 
 const detail = shallowRef<DpeDetail | null>(null)
@@ -37,8 +42,8 @@ const audits = shallowRef<Audit[]>([])
 const loading = ref(false)
 const errors = ref<string[]>([])
 const surface = ref<number | null>(props.surfaceAnnonce)
-const terrain = ref<number | null>(null)
-const prix = ref<number | null>(null)
+const terrain = ref<number | null>(props.terrainAnnonce ?? null)
+const prix = ref<number | null>(props.prixAnnonce ?? null)
 const parcelle = shallowRef<Parcelle | null>(null)
 const marche = shallowRef<MarcheLocal | null>(null)
 const risques = shallowRef<Risques | null>(null)

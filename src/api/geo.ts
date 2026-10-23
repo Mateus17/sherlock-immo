@@ -154,3 +154,22 @@ export async function nearbyCommunes(center: Commune, radiusKm: number): Promise
     .filter((c) => c.distanceKm <= radiusKm)
     .sort((a, b) => a.distanceKm - b.distanceKm)
 }
+
+// Commune par code INSEE (pour rouvrir une recherche partagée par lien)
+export async function getCommune(code: string, signal?: AbortSignal): Promise<Commune | null> {
+  const res = await fetch(
+    `https://geo.api.gouv.fr/communes/${encodeURIComponent(code)}?fields=nom,code,codesPostaux,codeDepartement,centre`,
+    { signal },
+  )
+  if (!res.ok) return null
+  const c: GeoApiCommune = await res.json()
+  if (!c.centre) return null
+  return {
+    nom: c.nom,
+    code: c.code,
+    codesPostaux: c.codesPostaux,
+    departement: c.codeDepartement,
+    lon: c.centre.coordinates[0],
+    lat: c.centre.coordinates[1],
+  }
+}

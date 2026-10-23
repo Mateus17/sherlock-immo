@@ -1,0 +1,37 @@
+name: Signaler un problème
+description: Quelque chose ne marche pas comme prévu
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci ! **N'indiquez jamais l'adresse d'un logement précis** : décrivez le cas avec des valeurs approchées.
+  - type: textarea
+    id: quoi
+    attributes:
+      label: Ce qui s'est passé
+      description: Ce que vous avez fait, ce que vous attendiez, ce que vous avez obtenu.
+      placeholder: "J'ai cherché une maison classée D d'environ 100 m² dans une commune de Bretagne, et…"
+    validations:
+      required: true
+  - type: input
+    id: lien
+    attributes:
+      label: Lien de la recherche (bouton « Partager »)
+      description: Facultatif. Le lien contient les critères, pas d'adresse.
+  - type: dropdown
+    id: appareil
+    attributes:
+      label: Appareil
+      options:
+        - Ordinateur, navigateur
+        - Ordinateur, application installée
+        - iPhone / iPad
+        - Android
+    validations:
+      required: true
+  - type: input
+    id: navigateur
+    attributes:
+      label: Navigateur et version
+      placeholder: Chrome 140, Safari iOS 26…

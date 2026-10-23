@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, shallowRef, watch } from 'vue'
+import AnnoncePaste from './components/AnnoncePaste.vue'
 import CityPicker from './components/CityPicker.vue'
 import DpeDetail from './components/DpeDetail.vue'
 import InstallButton from './components/InstallButton.vue'
@@ -20,6 +21,10 @@ import {
   type TypeBatiment,
   type ZoneCursor,
 } from './api/dpe'
+import { getCommune, searchCommunes, type Commune } from './api/geo'
+import type { IndicesAnnonce } from './lib/annonce'
+import { depuisParams, versParams, type Criteres } from './lib/lien'
+import { copier } from './lib/presse-papiers'
 
 const STORAGE_KEY = 'sherlock-immo:filters'
 
@@ -150,11 +155,134 @@ async function run(fn: (signal: AbortSignal) => Promise<void>) {
   }
 }
 
+// --- Lien partageable : les critères dans l'adresse de la page
+function criteres(): Criteres {
+  return {
+    communes: form.communes.map((c) => c.code),
+    rayonKm: form.alentours ? form.rayonKm : null,
+    etiquettesDpe: form.etiquettesDpe,
+    etiquettesGes: form.etiquettesGes,
+    types: form.types,
+    inclureNeufs: form.inclureNeufs,
+    surfaceMode: form.surfaceMode,
+    surfaceCible: form.surfaceCible,
+    tolerancePct: form.tolerancePct,
+    surfaceMin: form.surfaceMin,
+    surfaceMax: form.surfaceMax,
+    consoEp: form.consoEp,
+    ges: form.ges,
+    coutMin: form.coutMin,
+    coutMax: form.coutMax,
+    dateMin: form.dateMin,
+    dateMax: form.dateMax,
+    dateExacte: form.dateExacte,
+  }
+}
+
+const lienCopie = ref(false)
+async function partager() {
+  const url = `${location.origin}${location.pathname}?${versParams(criteres())}`
+  // Sur téléphone, la feuille de partage du système ; ailleurs, copie du lien
+  if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+    navigator.share({ title: 'Recherche Sherlock Immo', url }).catch(() => {})
+    return
+  }
+  if (await copier(url)) {
+    lienCopie.value = true
+    setTimeout(() => (lienCopie.value = false), 2500)
+  }
+}
+
+async function ouvrirLienPartage() {
+  const partage = depuisParams(new URLSearchParams(location.search))
+  if (!partage?.communes) return
+  const communes = (await Promise.all(partage.communes.map((c) => getCommune(c).catch(() => null)))).filter(
+    (c): c is Commune => !!c,
+  )
+  if (!communes.length) return
+  const { rayonKm, ...reste } = partage
+  Object.assign(form, { ...defaults, ...reste, communes, alentours: rayonKm != null, rayonKm: rayonKm ?? defaults.rayonKm })
+  search()
+}
+
+// --- Annonce collée : les indices remplissent les critères
+const annonce = reactive<{ prix: number | null; terrain: number | null }>({ prix: null, terrain: null })
+const bilanAnnonce = ref<string[] | null>(null)
+
+async function communesDeLAnnonce(i: IndicesAnnonce): Promise<Commune[]> {
+  try {
+    if (i.codePostal) {
+      const list = await searchCommunes({ nom: '', codePostal: i.codePostal })
+      // Un code postal peut couvrir plusieurs communes : on garde celle nommée dans l'annonce
+      const nom = i.ville?.nom.toLowerCase()
+      const meme = nom ? list.filter((c) => c.nom.toLowerCase() === nom) : []
+      return meme.length ? meme : list
+    }
+    if (i.ville) return (await searchCommunes({ nom: i.ville.nom, dep: i.ville.dep })).slice(0, 1)
+  } catch {
+    // API Géo indisponible : l'utilisateur saisira la commune
+  }
+  return []
+}
+
+async function appliquerAnnonce(i: IndicesAnnonce) {
+  // On repart des valeurs par défaut pour ne pas mélanger deux annonces
+  Object.assign(form, { ...defaults, communes: form.communes, nearbyRadiusKm: form.nearbyRadiusKm })
+  const faits: string[] = []
+  if (i.type) {
+    form.types = [i.type]
+    faits.push(i.type)
+  }
+  if (i.surface != null) {
+    form.surfaceMode = 'cible'
+    form.surfaceCible = i.surface
+    faits.push(`${i.surface} m²`)
+  }
+  if (i.etiquetteDpe) {
+    form.etiquettesDpe = [i.etiquetteDpe]
+    faits.push(`DPE ${i.etiquetteDpe}`)
+  }
+  if (i.etiquetteGes) {
+    form.etiquettesGes = [i.etiquetteGes]
+    faits.push(`GES ${i.etiquetteGes}`)
+  }
+  if (i.consoEp != null) {
+    form.consoEp = i.consoEp
+    faits.push(`${i.consoEp} kWh/m²/an`)
+  }
+  if (i.ges != null) {
+    form.ges = i.ges
+    faits.push(`${i.ges} kg CO₂/m²/an`)
+  }
+  if (i.coutMin != null && i.coutMax != null) {
+    form.coutMin = i.coutMin
+    form.coutMax = i.coutMax
+    faits.push("dépenses d'énergie")
+  }
+  if (i.dateDpe) {
+    form.dateExacte = true
+    form.dateMin = i.dateDpe
+    form.dateMax = null
+    faits.push('date du DPE')
+  }
+  annonce.prix = i.prix ?? null
+  annonce.terrain = i.terrain ?? null
+  if (i.prix) faits.push('prix (pour la fiche)')
+  if (i.terrain) faits.push('terrain (pour la fiche)')
+  const communes = await communesDeLAnnonce(i)
+  if (communes.length) {
+    form.communes = communes
+    faits.unshift(communes.map((c) => c.nom).join(', '))
+  }
+  bilanAnnonce.value = faits
+}
+
 function search() {
   if (!form.communes.length) return
   const filters = toFilters()
   return run(async (signal) => {
     const r = await searchDpe(filters, signal)
+    history.replaceState(null, '', `${location.pathname}?${versParams(criteres())}${location.hash}`)
     results.value = r.results
     zones.value = r.zones
     shownRayon.value = filters.rayonKm
@@ -182,6 +310,7 @@ function newSearch() {
   error.value = null
   selectedId.value = null
   detailDpe.value = null
+  history.replaceState(null, '', location.pathname + location.hash)
 }
 
 function select(id: string) {
@@ -239,6 +368,7 @@ const onHash = () => {
 
 onMounted(async () => {
   window.addEventListener('hashchange', onHash)
+  ouvrirLienPartage()
   updatedAt.value = await getDatasetUpdatedAt()
 })
 </script>
@@ -260,6 +390,8 @@ onMounted(async () => {
         </p>
         <InstallButton v-if="!hasResults" class="install" />
       </header>
+
+      <AnnoncePaste class="paste-box" :bilan="bilanAnnonce" @indices="appliquerAnnonce" />
 
       <form @submit.prevent="search">
         <fieldset class="f-loc">
@@ -316,7 +448,7 @@ onMounted(async () => {
                     :value="form.consoEp ?? ''"
                     type="number"
                     min="0"
-                    placeholder="ex. 187"
+                    placeholder="ex. 142"
                     @input="form.consoEp = numberOrNull(($event.target as HTMLInputElement).value)"
                   />
                   <small class="muted">kWh/m²/an</small>
@@ -327,7 +459,7 @@ onMounted(async () => {
                     :value="form.ges ?? ''"
                     type="number"
                     min="0"
-                    placeholder="ex. 6"
+                    placeholder="ex. 31"
                     @input="form.ges = numberOrNull(($event.target as HTMLInputElement).value)"
                   />
                   <small class="muted">kg CO₂/m²/an</small>
@@ -462,6 +594,9 @@ onMounted(async () => {
           <input v-model="form.unParAdresse" type="checkbox" />
           Un seul DPE par adresse (le plus récent)
         </label>
+        <button type="button" :title="lienCopie ? '' : 'Copier le lien de cette recherche'" @click="partager">
+          {{ lienCopie ? 'Lien copié ✓' : 'Partager' }}
+        </button>
         <button v-if="hasMore" type="button" :disabled="loading" @click="more">Charger plus</button>
         <button type="button" @click="exportCsv">Exporter CSV</button>
       </div>
@@ -489,6 +624,8 @@ onMounted(async () => {
           class="detail-pane"
           :dpe="detailDpe"
           :surface-annonce="surfaceAnnonce"
+          :terrain-annonce="annonce.terrain"
+          :prix-annonce="annonce.prix"
           @close="closeDetail"
           @open="openDetail"
           @parcelle="parcelleGeom = $event"
@@ -745,6 +882,9 @@ footer {
 }
 .landing header .status {
   flex-basis: 100%;
+}
+.landing .paste-box:not(.open) {
+  text-align: center;
 }
 
 .landing h1 {

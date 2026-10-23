@@ -26,8 +26,13 @@ src/
 │   ├── geo.ts                 API Géo : communes, communes voisines
 │   └── territoire.ts          cadastre, PLU, Géorisques, DVF
 ├── lib/
-│   └── verification.ts        règles « points d'attention » (fonctions pures)
+│   ├── verification.ts        règles « points d'attention » (fonctions pures)
+│   ├── annonce.ts             lecture d'une annonce collée (expressions régulières)
+│   ├── lien.ts                critères ↔ paramètres d'adresse (lien partageable)
+│   ├── presse-papiers.ts      copie avec repli
+│   └── __tests__/             tests Vitest
 └── components/
+    ├── AnnoncePaste.vue       zone « coller une annonce »
     ├── CityPicker.vue         saisie des communes (+ filtre département)
     ├── NearbyCommunes.vue     liste à cocher des communes voisines
     ├── EtiquettePicker.vue    boutons A → G
@@ -47,11 +52,14 @@ scripts/make-icons.mjs         génère les icônes PNG à partir du SVG
 
 ## Flux d'une recherche
 
+0. Facultatif : `lireAnnonce()` transforme une annonce collée en indices, qui remplissent le formulaire. La commune est retrouvée par le code postal (ou « Ville (35) ») via l'API Géo.
+
 1. `App.vue` transforme le formulaire en `DpeFilters` (la surface « valeur ± tolérance » devient un intervalle, les dates exactes deviennent `gte = lte`, etc.).
 2. `searchDpe()` construit une requête par base (existants, et neufs si la case est cochée) et par zone. Sans rayon, toutes les communes tiennent en une requête (`code_insee_ban_in`). Avec un rayon, il faut une requête par commune, car l'API n'accepte qu'un seul `geo_distance`.
 3. Les résultats sont fusionnés et dédoublonnés par numéro de DPE. Chaque ligne garde sa base d'origine (`_source`).
 4. « Charger plus » suit le curseur `next` de chaque requête.
-5. L'option « un seul DPE par adresse » est appliquée côté client (`latestPerAddress`).
+5. L'adresse de la page est mise à jour avec les critères (`versParams()`). À l'ouverture d'un lien contenant `?c=…`, `depuisParams()` relit les critères, l'app retrouve les communes par leur code INSEE puis relance la recherche.
+6. L'option « un seul DPE par adresse » est appliquée côté client (`latestPerAddress`).
 
 ## Flux de la fiche
 
@@ -138,13 +146,17 @@ Pour ajouter une règle : écrire la condition dans `analyser()` (ou `analyserTe
 
 `public/icons/icon.svg` : une loupe dont l'anneau reprend les sept couleurs de l'étiquette énergie, avec une maison dans la lentille. `npm run icons` (`scripts/make-icons.mjs`) en tire les PNG : 192 et 512 px, une variante `maskable` (motif réduit à 80 % sur fond plein), l'icône iOS (fond carré plein) et le favicon 32 px.
 
+## Tests
+
+`npm test` (Vitest) couvre les fonctions pures : lecture d'annonce, lien partageable, règles de vérification. Les données de test sont **fictives** : n'y mettez jamais les chiffres d'un logement réel, qu'on pourrait retrouver avec l'application.
+
 ## Publication
 
-`.github/workflows/deploy.yml` construit le site (`npm ci && npm run build`) à chaque push sur `main` et le publie sur GitHub Pages. `vite.config.ts` utilise `base: './'` : le même build fonctionne à la racine d'un domaine comme dans un sous-dossier (`/sherlock-immo/`). Le workflow injecte `VITE_REPO_URL`, affichée sur la page Sources et outils.
+- `.github/workflows/ci.yml` : tests, types et build sur chaque pull request.
+- `.github/workflows/deploy.yml` : tests puis build à chaque push sur `main`, publication sur GitHub Pages.
+- `.github/dependabot.yml` : mises à jour mensuelles et groupées des dépendances et des actions. `vite.config.ts` utilise `base: './'` : le même build fonctionne à la racine d'un domaine comme dans un sous-dossier (`/sherlock-immo/`). Le workflow injecte `VITE_REPO_URL`, affichée sur la page Sources et outils.
 
 ## Pistes
 
-- Coller le texte d'une annonce pour remplir le formulaire automatiquement.
 - Recherche inverse par surface de terrain : parcelles d'une commune ([cadastre Etalab](https://cadastre.data.gouv.fr), champ `contenance`) croisées avec les DPE.
 - Permis de construire (Sitadel) pour vérifier une extension.
-- Tests unitaires des règles de `verification.ts`.

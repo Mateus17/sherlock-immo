@@ -1,0 +1,36 @@
+name: Proposer une source de données
+description: Une base publique à brancher dans Sherlock Immo
+labels: [données]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pour être intégrée, une source doit être **publique, sans clé d'API, sans quota bloquant, et accessible en CORS**
+        (voir [CONTRIBUTING.md](https://github.com/Mateus17/sherlock-immo/blob/main/CONTRIBUTING.md#principes-du-projet)).
+  - type: input
+    id: nom
+    attributes:
+      label: Nom et producteur
+      placeholder: "Cartes de bruit stratégiques — Cerema"
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Adresse de l'API ou du jeu de données
+    validations:
+      required: true
+  - type: textarea
+    id: usage
+    attributes:
+      label: À quoi elle servirait pour un acheteur
+    validations:
+      required: true
+  - type: checkboxes
+    id: criteres
+    attributes:
+      label: Vérifications
+      options:
+        - label: Sans clé d'API ni compte
+        - label: Licence ouverte (Licence Ouverte, ODbL…)
+        - label: En-tête `access-control-allow-origin` présent (testé avec `curl -I -H "Origin: http://localhost:5173" <url>`)

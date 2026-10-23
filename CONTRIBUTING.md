@@ -24,8 +24,11 @@ npm run dev
 Avant de proposer une modification :
 
 ```bash
+npm test        # tests unitaires (Vitest)
 npm run build   # vérifie les types (vue-tsc) puis construit
 ```
+
+La même vérification tourne automatiquement sur chaque pull request.
 
 ## Principes du projet
 
@@ -51,7 +54,8 @@ npm run build   # vérifie les types (vue-tsc) puis construit
 1. Ajoutez la condition dans `analyser()` ou `analyserTerritoire()` (`src/lib/verification.ts`).
 2. Choisissez le niveau : `alerte` (incohérence forte), `attention` (à vérifier ou à négocier), `info`, `ok`.
 3. Rédigez un `titre` factuel et un `detail` qui dit quoi demander ou vérifier.
-4. Si la règle repose sur un seuil ou sur un texte de loi, indiquez la source en commentaire et ajoutez-la au tableau de [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#règles-de-vérification).
+4. Ajoutez un test dans `src/lib/__tests__/verification.test.ts`, avec un logement **fictif**.
+5. Si la règle repose sur un seuil ou sur un texte de loi, indiquez la source en commentaire et ajoutez-la au tableau de [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#règles-de-vérification).
 
 ## Proposer une modification
 

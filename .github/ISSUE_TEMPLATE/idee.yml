@@ -1,0 +1,22 @@
+name: Proposer une idée
+description: Une fonctionnalité, un filtre, une vérification à ajouter
+labels: [idée]
+body:
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Le besoin
+      description: Quelle question d'acheteur cette idée aiderait-elle à résoudre ?
+      placeholder: "Quand je visite une maison, je voudrais savoir si…"
+    validations:
+      required: true
+  - type: textarea
+    id: idee
+    attributes:
+      label: L'idée
+      description: Comment vous l'imagineriez dans l'application.
+  - type: textarea
+    id: source
+    attributes:
+      label: Données nécessaires
+      description: Si vous connaissez une source publique qui fournit l'information, indiquez-la.

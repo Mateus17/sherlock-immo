@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { observatoireUrl, type Dpe } from '../api/dpe'
+import { copier } from '../lib/presse-papiers'
 import DpeBadge from './DpeBadge.vue'
 
 const props = defineProps<{ results: Dpe[]; selectedId: string | null }>()
@@ -43,19 +44,7 @@ function formatDate(s?: string) {
 }
 
 function copy(text?: string) {
-  if (!text) return
-  // navigator.clipboard n'existe qu'en HTTPS : repli pour l'iPhone servi en http par le Mac
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text)
-    return
-  }
-  const ta = Object.assign(document.createElement('textarea'), { value: text })
-  ta.style.position = 'fixed'
-  ta.style.opacity = '0'
-  document.body.appendChild(ta)
-  ta.select()
-  document.execCommand('copy')
-  ta.remove()
+  if (text) copier(text)
 }
 </script>
 

@@ -10,10 +10,20 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Mateus17/sherlock-immo/actions/workflows/deploy.yml"><img src="https://github.com/Mateus17/sherlock-immo/actions/workflows/deploy.yml/badge.svg" alt="Déploiement" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-4b55d6" alt="Licence MIT" /></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/github/v/release/Mateus17/sherlock-immo?label=version&color=c9792c" alt="Version" /></a>
+</p>
+
+<p align="center">
   <a href="https://mateus17.github.io/sherlock-immo/"><strong>Ouvrir l'application</strong></a>
   · <a href="docs/GUIDE.md">Guide d'utilisation</a>
   · <a href="docs/ARCHITECTURE.md">Comment c'est fait</a>
   · <a href="CONTRIBUTING.md">Contribuer</a>
+</p>
+
+<p align="center">
+  <img src="docs/images/accueil.jpg" alt="Page d'accueil : critères de recherche" width="860" />
 </p>
 
 ---
@@ -28,9 +38,15 @@ Or ces chiffres sont publics. Depuis 2021, chaque DPE est enregistré par l'ADEM
 
 **Retrouver le bien**
 
+- **Collez le texte de l'annonce** : ville, surface, étiquettes, consommation, émissions, dépenses d'énergie, prix et terrain sont repérés et remplissent les critères. L'analyse se fait dans votre navigateur.
 - Par **commune** (plusieurs possibles, avec les communes voisines à cocher), **étiquettes DPE et GES**, **surface habitable** (valeur ± tolérance) et **date du DPE**.
 - Par les **chiffres exacts de l'annonce** : consommation (kWh/m²/an), émissions (kg CO₂/m²/an) et dépenses annuelles d'énergie. Ce sont les critères les plus efficaces : deux chiffres suffisent souvent pour tomber sur une seule maison.
 - Résultats sur une carte (plan ou photo aérienne IGN) et dans un tableau, avec export CSV.
+- **Partagez une recherche par lien** : les critères sont dans l'adresse de la page.
+
+<p align="center">
+  <img src="docs/images/resultats.jpg" alt="Résultats sur la carte et dans le tableau" width="860" />
+</p>
 
 **Vérifier le bien** (fiche détaillée)
 
@@ -42,7 +58,13 @@ Or ces chiffres sont publics. Depuis 2021, chaque DPE est enregistré par l'ADEM
 - **Risques** (inondation, argiles, radon, sols pollués…) et **urbanisme** (zone du PLU, zones constructibles à proximité).
 - Liens vers la vue de rue, la photo aérienne et les photos aériennes anciennes (pour repérer une extension).
 
+<p align="center">
+  <img src="docs/images/fiche.jpg" alt="Fiche de vérification d'un logement" width="380" />
+</p>
+
 Chaque point d'attention est un **signal**, pas une preuve : il indique quelle question poser au vendeur ou à l'agence.
+
+<sub>Captures : adresses et chiffres remplacés par des valeurs fictives.</sub>
 
 ## Utiliser l'application
 
@@ -83,6 +105,7 @@ Prérequis : Node.js 20 ou plus.
 ```bash
 npm install
 npm run dev        # http://localhost:5173
+npm test           # tests (lecture d'annonce, lien partageable, règles de vérification)
 npm run build      # vérification des types + build statique dans dist/
 ```
 
@@ -90,11 +113,11 @@ L'organisation du code, les API et les règles de vérification sont décrites d
 
 ### Icônes
 
-Le logo est un SVG unique, `public/icons/icon.svg`. `npm run icons` en génère les déclinaisons PNG (Android, iOS, favicon).
+Le logo est un SVG unique, `public/icons/icon.svg`. `npm run icons` en génère les déclinaisons PNG (Android, iOS, favicon) et l'image d'aperçu des liens partagés (`public/og.png`).
 
 ### Publication
 
-Chaque push sur `main` construit le site et le publie sur GitHub Pages ([workflow](.github/workflows/deploy.yml)). Comme tous les chemins sont relatifs, le dossier `dist/` fonctionne aussi tel quel sur n'importe quel hébergement statique (Netlify, Cloudflare Pages…).
+Chaque pull request est vérifiée (tests, types, build : [workflow](.github/workflows/ci.yml)). Chaque push sur `main` construit le site et le publie sur GitHub Pages ([workflow](.github/workflows/deploy.yml)). Les nouveautés sont listées dans le [CHANGELOG](CHANGELOG.md). Comme tous les chemins sont relatifs, le dossier `dist/` fonctionne aussi tel quel sur n'importe quel hébergement statique (Netlify, Cloudflare Pages…).
 
 ## Contribuer
 

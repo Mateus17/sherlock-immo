@@ -19,6 +19,8 @@ Une annonce doit légalement afficher plusieurs informations utiles. Notez-les :
 
 Les chiffres en kWh et en kg CO₂ sont **de loin les plus efficaces**. Une lettre seule correspond à des centaines de logements, ces deux chiffres à quelques-uns, souvent un seul.
 
+**Le plus rapide :** cliquez sur **« Coller une annonce pour remplir les critères »** et collez tout le texte de l'annonce (titre, description, encadré énergie). Sherlock Immo repère les indices ci-dessus, les reporte dans les critères et garde le prix et le terrain pour la fiche. Vérifiez ce qui a été rempli, puis lancez la recherche. Le texte n'est envoyé nulle part.
+
 ## 2. Indiquer où chercher
 
 - Tapez une ville ou un code postal. S'il existe plusieurs communes du même nom, ajoutez le numéro de département : `Saint-Martin 79`.
@@ -40,6 +42,7 @@ Par défaut, la recherche inclut les logements neufs et ne montre qu'**un seul D
 - Chaque point sur la carte a la couleur de son étiquette énergie. Le fond **Photo aérienne** (bouton en haut à droite de la carte) aide à reconnaître la maison des photos de l'annonce.
 - Le tableau se trie par colonne. **Exporter CSV** récupère la liste.
 - **← Nouvelle recherche** revient au formulaire en gardant vos critères.
+- **Partager** copie un lien vers cette recherche (sur téléphone, ouvre le menu de partage). La personne qui l'ouvre retombe sur les mêmes résultats. Le lien contient les critères, pas d'adresse.
 
 ## 5. Vérifier le bien : la fiche
 

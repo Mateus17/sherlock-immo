@@ -85,7 +85,7 @@ export interface DpeFilters {
   inclureNeufs: boolean
 }
 
-// Les annonces affichent des entiers, la base a parfois une décimale (186,5 → « 187 »)
+// Les annonces affichent des entiers, la base a parfois une décimale (141,5 → « 142 »)
 const ROUNDING = 0.5
 
 interface LinesResponse {
