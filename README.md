@@ -100,7 +100,7 @@ Sherlock Immo n'est affilié à aucun de ces organismes.
 
 ## Développement
 
-Prérequis : Node.js 20 ou plus.
+Prérequis : Node.js 20.19 ou plus récent (22.12 ou plus pour la branche 22).
 
 ```bash
 npm install
