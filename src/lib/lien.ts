@@ -2,7 +2,7 @@
 // Format court et lisible : ?c=35238,35047&dpe=CD&s=120&tol=5&kwh=142&co2=31
 // Seules les valeurs différentes du défaut sont écrites.
 
-import { ETIQUETTES, type Etiquette, type TypeBatiment } from '../api/dpe'
+import { ENERGIES, ETIQUETTES, PERIODES, type Energie, type Etiquette, type Periode, type TypeBatiment } from '../api/dpe'
 
 export interface Criteres {
   communes: string[] // codes INSEE
@@ -23,6 +23,12 @@ export interface Criteres {
   dateMin: string | null
   dateMax: string | null
   dateExacte: boolean
+  periodes: Periode[]
+  energies: Energie[]
+  pompeAChaleur: boolean
+  plainPied: boolean
+  avecPhotovoltaique: boolean
+  confortEteBon: boolean
 }
 
 const TYPES: TypeBatiment[] = ['maison', 'appartement', 'immeuble']
@@ -53,6 +59,12 @@ export function versParams(c: Criteres): URLSearchParams {
   set('du', c.dateMin)
   if (c.dateExacte) set('exact', 1)
   else set('au', c.dateMax)
+  set('per', c.periodes.join(','))
+  set('en', c.energies.join(','))
+  if (c.pompeAChaleur) set('pac', 1)
+  if (c.plainPied) set('pp', 1)
+  if (c.avecPhotovoltaique) set('pv', 1)
+  if (c.confortEteBon) set('ete', 1)
   return p
 }
 
@@ -94,5 +106,12 @@ export function depuisParams(p: URLSearchParams): Partial<Criteres> | null {
   out.dateExacte = p.get('exact') === '1'
   out.dateMin = isDate(p.get('du')) ? p.get('du') : null
   out.dateMax = !out.dateExacte && isDate(p.get('au')) ? p.get('au') : null
+  const liste = (k: string) => (p.get(k) ?? '').split(',').filter(Boolean)
+  out.periodes = liste('per').filter((x): x is Periode => (PERIODES as readonly string[]).includes(x))
+  out.energies = liste('en').filter((x): x is Energie => x in ENERGIES)
+  out.pompeAChaleur = p.get('pac') === '1'
+  out.plainPied = p.get('pp') === '1'
+  out.avecPhotovoltaique = p.get('pv') === '1'
+  out.confortEteBon = p.get('ete') === '1'
   return out
 }

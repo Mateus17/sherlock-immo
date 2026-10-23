@@ -1,0 +1,260 @@
+/* Formulaire de recherche : colonne de filtres (résultats affichés) ou page d'accueil
+   (.landing). Feuille commune aux composants de src/components/filtres/. */
+
+.filters form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.filters fieldset {
+  /* fieldset a un min-width: min-content par défaut, qui fait déborder la colonne */
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.filters legend {
+  font-weight: 600;
+  margin-bottom: 6px;
+  padding: 0;
+}
+.filters .check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.filters .types {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.filters .range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.filters .range input {
+  flex: 1;
+}
+.filters .range output {
+  min-width: 48px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.filters .row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.filters .row input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+.filters .date-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.filters .date-line span {
+  min-width: 22px;
+}
+.filters .date-line input {
+  flex: 1;
+  min-width: 0;
+}
+.filters .segmented {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.filters .segmented button {
+  flex: 1;
+  border: 0;
+  border-radius: 0;
+  padding: 6px 8px;
+  font-size: 0.9em;
+}
+.filters .segmented button[aria-pressed='true'] {
+  background: var(--accent-strong);
+  color: #fff;
+}
+.filters .hint {
+  margin: 0;
+  font-size: 0.85em;
+}
+.filters .pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.filters .pair label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.filters .pair input {
+  width: 100%;
+  min-width: 0;
+}
+.filters .pair span,
+.filters .sublabel {
+  font-size: 0.9em;
+}
+.filters .buttons {
+  display: flex;
+  gap: 8px;
+}
+.filters .buttons .primary {
+  flex: 1;
+}
+
+/* Pastilles à bascule (périodes, énergies) */
+.filters .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.filters .chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.88em;
+}
+.filters .chip[aria-pressed='true'] {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #fff;
+}
+/* Titre de bloc repliable */
+.filters legend .toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 600;
+}
+.filters .badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5em;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-strong);
+  color: #fff;
+  font-size: 0.75em;
+}
+
+/* --- Accueil : blocs en cartes, sur 1, 2 ou 3 colonnes selon la largeur --- */
+.landing .filters form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    'loc type'
+    'loc labels'
+    'loc .'
+    'surf date'
+    'constr constr'
+    'btn btn';
+  /* La rangée vide absorbe la hauteur de « Localisation » : les blocs voisins restent groupés */
+  grid-template-rows: auto auto 1fr auto auto auto;
+  gap: 16px;
+  align-items: start;
+}
+.landing .filters fieldset,
+.landing .filters .f-labels {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+/* DPE et GES : un seul bloc, les deux fieldsets internes sans cadre */
+.filters .f-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.landing .filters .f-labels fieldset {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+/* Sorti du bord du fieldset pour rester dans le bloc */
+.landing .filters legend {
+  float: left;
+  width: 100%;
+}
+.landing .f-loc {
+  grid-area: loc;
+  align-self: stretch;
+}
+.landing .f-type {
+  grid-area: type;
+}
+.landing .f-labels {
+  grid-area: labels;
+}
+.landing .f-surf {
+  grid-area: surf;
+  align-self: stretch;
+}
+.landing .f-date {
+  grid-area: date;
+  align-self: stretch;
+}
+.landing .f-constr {
+  grid-area: constr;
+}
+.landing .filters .buttons {
+  grid-area: btn;
+  justify-content: center;
+}
+.landing .filters .buttons .primary {
+  flex: 0 1 320px;
+  padding: 12px 20px;
+  font-size: 1.05em;
+}
+
+/* Hors 3 colonnes, les conteneurs de colonne s'effacent : leurs blocs suivent la grille */
+.filters .col {
+  display: contents;
+}
+
+/* Très grand écran : trois colonnes, chacune empile ses blocs */
+@media (min-width: 1280px) {
+  .landing .filters form {
+    grid-template-columns: 1.1fr 1fr 1fr;
+    grid-template-areas:
+      'loc b c'
+      'btn btn btn';
+    grid-template-rows: auto auto;
+  }
+  .landing .filters .col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .landing .col-b {
+    grid-area: b;
+  }
+  .landing .col-c {
+    grid-area: c;
+  }
+}
+
+@media (max-width: 860px) {
+  .landing .filters form {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'loc' 'type' 'labels' 'surf' 'date' 'constr' 'btn';
+    grid-template-rows: none;
+  }
+}

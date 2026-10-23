@@ -2,6 +2,7 @@
 import { DPE_COLORS, ETIQUETTES, type Etiquette } from '../api/dpe'
 
 const model = defineModel<Etiquette[]>({ required: true })
+defineProps<{ label?: string }>()
 
 function toggle(e: Etiquette) {
   model.value = model.value.includes(e) ? model.value.filter((x) => x !== e) : [...model.value, e].sort()
@@ -9,12 +10,13 @@ function toggle(e: Etiquette) {
 </script>
 
 <template>
-  <div class="etiquettes" role="group">
+  <div class="etiquettes" role="group" :aria-label="label">
     <button
       v-for="e in ETIQUETTES"
       :key="e"
       type="button"
       :aria-pressed="model.includes(e)"
+      :aria-label="label ? `${label} ${e}` : e"
       :style="{ '--c': DPE_COLORS[e] }"
       @click="toggle(e)"
     >

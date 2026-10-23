@@ -10,6 +10,8 @@ export interface Point {
   niveau: Niveau
   titre: string
   detail?: string
+  // Question à poser au vendeur ou à l'agence, reprise dans le dossier imprimable
+  question?: string
 }
 
 const REFORME_ELEC_2026 = '2026-01-01'
@@ -54,6 +56,7 @@ function analyserTerritoire(ctx: Contexte): Point[] {
       points.push({
         niveau: 'attention',
         titre: `Terrain annoncé plus grand que la parcelle (${terrainAnnonce} m² contre ${parcelle.contenance} m²)`,
+        question: 'Quelles sont les références cadastrales exactes de toutes les parcelles vendues ?',
         detail:
           'Le bien peut compter plusieurs parcelles (jardin séparé, part de chemin) : demandez les références cadastrales exactes du compromis.',
       })
@@ -61,6 +64,7 @@ function analyserTerritoire(ctx: Contexte): Point[] {
       points.push({
         niveau: 'info',
         titre: `Parcelle plus grande que le terrain annoncé (${parcelle.contenance} m²)`,
+        question: 'Une division du terrain est-elle prévue ou en cours ?',
         detail: 'Division de terrain en cours, ou parcelle partagée ? À vérifier.',
       })
     else points.push({ niveau: 'ok', titre: `Terrain cohérent avec le cadastre (${parcelle.contenance} m²)` })
@@ -79,6 +83,7 @@ function analyserTerritoire(ctx: Contexte): Point[] {
     points.push({
       niveau: prixAnnonce && (prixAnnonce - derniere.prix) / derniere.prix > 0.3 ? 'attention' : 'info',
       titre: `Dernière vente : ${euros(derniere.prix)} en ${an}`,
+      question: "Quels travaux ont été réalisés depuis l'achat, avec quelles factures ?",
       detail,
     })
 
@@ -89,6 +94,7 @@ function analyserTerritoire(ctx: Contexte): Point[] {
       points.push({
         niveau: 'alerte',
         titre: `Surface déclarée aux impôts : ${fiscale} m², contre ${s} m² au DPE`,
+        question: "Les agrandissements ont-ils fait l'objet d'un permis ou d'une déclaration, et la taxe foncière a-t-elle été mise à jour ?",
         detail:
           "Lors de la vente de " +
           an +
@@ -101,7 +107,13 @@ function analyserTerritoire(ctx: Contexte): Point[] {
     const pm2 = prixAnnonce / dpe.surface_habitable_logement
     const ecart = ((pm2 - marche.medianePrixM2) / marche.medianePrixM2) * 100
     const base = `${euros(pm2)}/m² contre une médiane de ${euros(marche.medianePrixM2)}/m² sur ${marche.comparables.length} ventes de la section cadastrale (3 ans).`
-    if (ecart > 20) points.push({ niveau: 'attention', titre: `Prix ${ecart.toFixed(0)} % au-dessus du quartier`, detail: base })
+    if (ecart > 20)
+      points.push({
+        niveau: 'attention',
+        titre: `Prix ${ecart.toFixed(0)} % au-dessus du quartier`,
+        detail: base,
+        question: 'Comment le prix a-t-il été fixé ? Sur quelles ventes comparables ?',
+      })
     else if (ecart < -20)
       points.push({ niveau: 'info', titre: `Prix ${Math.abs(ecart).toFixed(0)} % sous le quartier`, detail: `${base} Pourquoi ? Travaux, nuisances, vice ?` })
     else points.push({ niveau: 'ok', titre: 'Prix dans la moyenne du quartier', detail: base })
@@ -116,28 +128,36 @@ function analyserTerritoire(ctx: Contexte): Point[] {
       points.push({
         niveau: 'alerte',
         titre: "Risque d'inondation signalé à cette adresse",
+        question: "Le bien a-t-il déjà été inondé ? Quels sinistres ont été déclarés à l'assurance ?",
         detail: "Demandez si le bien a déjà été inondé (sinistres déclarés) et le coût de l'assurance.",
       })
     else if (r.cle === 'retraitGonflementArgile' && /moyen|fort/i.test(adresse || commune))
       points.push({
         niveau: 'attention',
         titre: `Sols argileux : exposition ${(adresse || commune).replace(/^Risque Existant - /i, '')}`,
+        question: 'Des fissures sont-elles apparues ? Une expertise ou une déclaration de catastrophe naturelle a-t-elle eu lieu ?',
         detail: 'Risque de fissures en période de sécheresse. Inspectez murs et angles ; une étude de sol est obligatoire pour construire.',
       })
     else if (r.cle === 'radon' && /important/i.test(adresse || commune))
       points.push({
         niveau: 'attention',
         titre: 'Potentiel radon élevé',
+        question: 'Une mesure du radon a-t-elle déjà été faite ?',
         detail: "Gaz radioactif naturel : ventilation indispensable, une mesure par dosimètre coûte quelques dizaines d'euros.",
       })
     else if (r.cle === 'pollutionSols' && ici)
       points.push({
         niveau: 'alerte',
         titre: 'Site pollué ou ancien site industriel à proximité',
+        question: 'Le terrain ou le voisinage ont-ils accueilli une activité industrielle ou artisanale ?',
         detail: 'Consultez le détail dans le rapport Géorisques (lien plus bas).',
       })
     else if (r.cle === 'icpe' && ici)
-      points.push({ niveau: 'attention', titre: 'Installation industrielle classée à proximité' })
+      points.push({
+        niveau: 'attention',
+        titre: 'Installation industrielle classée à proximité',
+        question: 'Quelle est cette installation, et y a-t-il des nuisances (bruit, odeurs, circulation) ?',
+      })
     else if (r.cle === 'nucleaire' && ici) points.push({ niveau: 'attention', titre: 'Zone de risque nucléaire' })
   }
 
@@ -155,6 +175,7 @@ function analyserTerritoire(ctx: Contexte): Point[] {
     points.push({
       niveau: 'attention',
       titre: `Zone à urbaniser à moins de 150 m (${aUrbaniser.map((v) => v.libelle).join(', ')})`,
+      question: 'Quels projets de construction sont prévus sur les terrains voisins ?',
       detail: 'Des constructions (lotissement, immeubles) peuvent pousser à côté : vue et calme non garantis.',
     })
 
@@ -174,6 +195,7 @@ export function analyser(ctx: Contexte): Point[] {
       points.push({
         niveau: 'alerte',
         titre: `Surface annoncée supérieure de ${ecart.toFixed(0)} % au DPE`,
+        question: 'Pouvez-vous fournir le mesurage de la surface habitable (loi Boutin, ou Carrez en copropriété) ?',
         detail: `${surfaceAnnonce} m² annoncés contre ${s} m² habitables. Véranda, combles, sous-sol ou garage comptés ? Demandez le métrage loi Boutin (ou Carrez en copropriété).`,
       })
     else if (ecart < -5)
@@ -193,6 +215,7 @@ export function analyser(ctx: Contexte): Point[] {
       points.push({
         niveau: 'alerte',
         titre: 'DPE expiré',
+        question: 'Un nouveau DPE sera-t-il réalisé avant la promesse de vente ?',
         detail: `Fin de validité le ${fmtDate(dpe.date_fin_validite_dpe)}. Un DPE valide est obligatoire pour vendre.`,
       })
     else if (mois < 12)
@@ -203,6 +226,7 @@ export function analyser(ctx: Contexte): Point[] {
     points.push({
       niveau: 'attention',
       titre: 'DPE établi sans visite du logement',
+      question: 'Un DPE spécifique à ce logement, avec visite, peut-il être fourni ?',
       detail: "Calculé à partir des données de l'immeuble : il peut être éloigné de la réalité de ce logement.",
     })
 
@@ -215,6 +239,7 @@ export function analyser(ctx: Contexte): Point[] {
     points.push({
       niveau: 'attention',
       titre: `${anterieurs.length + 1} DPE pour ce logement en ${mois} mois`,
+      question: 'Pourquoi plusieurs DPE ont-ils été réalisés en si peu de temps ?',
       detail: `Étiquettes successives : ${[...anterieurs, dpe].map((h) => h.etiquette_dpe ?? '?').join(' → ')}. Pourquoi autant de diagnostics ?`,
     })
   }
@@ -241,6 +266,7 @@ export function analyser(ctx: Contexte): Point[] {
       points.push({
         niveau: court ? 'alerte' : 'info',
         titre: `Étiquette améliorée de ${h.etiquette_dpe} à ${dpe.etiquette_dpe} en ${Math.max(1, Math.round(mois))} mois`,
+        question: "Quels travaux expliquent l'amélioration de l'étiquette ? Pouvez-vous fournir les factures ?",
         detail: court
           ? `DPE du ${fmtDate(h.date_etablissement_dpe)} : ${h.etiquette_dpe}. Demandez les factures des travaux réalisés entre-temps ; sans travaux, un DPE refait jusqu'à obtenir une meilleure note est un signal d'alarme.`
           : `DPE du ${fmtDate(h.date_etablissement_dpe)} : ${h.etiquette_dpe}. Des travaux ont pu être faits : demandez les factures.`,
@@ -270,6 +296,7 @@ export function analyser(ctx: Contexte): Point[] {
     points.push({
       niveau: 'alerte',
       titre: 'DPE refait sans nouvelle visite',
+      question: "Qu'est-ce qui a été corrigé entre les deux DPE, sans nouvelle visite du diagnostiqueur ?",
       detail: `Visite du ${fmtDate(dpe.date_visite_diagnostiqueur)}, avant le DPE précédent du ${fmtDate(prec.date_etablissement_dpe)} (${prec.etiquette_dpe}, ${prec.surface_habitable_logement ?? '?'} m²). Mêmes relevés, résultat différent : demandez au diagnostiqueur ce qui a été corrigé.`,
     })
 
@@ -283,6 +310,7 @@ export function analyser(ctx: Contexte): Point[] {
       points.push({
         niveau: ecart > 0 ? 'alerte' : 'attention',
         titre: `Surface ${ecart > 0 ? 'augmentée' : 'réduite'} de ${s0} à ${s1} m² entre deux DPE`,
+        question: 'Quelle est la surface habitable exacte, et pourquoi a-t-elle changé entre les deux DPE ?',
         detail:
           ecart > 0
             ? `DPE du ${fmtDate(precedent.date_etablissement_dpe)}. Une surface plus grande fait mécaniquement baisser les kWh/m² et améliore l'étiquette. Extension réelle (permis, factures) ou surface gonflée ?`
@@ -295,6 +323,7 @@ export function analyser(ctx: Contexte): Point[] {
     points.push({
       niveau: 'attention',
       titre: 'Un DPE plus récent existe pour ce logement',
+      question: 'Pouvez-vous fournir le DPE le plus récent ?',
       detail: `Le plus récent date du ${fmtDate(posterieurs.at(-1)!.date_etablissement_dpe)} (${posterieurs.at(-1)!.etiquette_dpe}). C'est lui qui fait foi.`,
     })
 
@@ -313,6 +342,7 @@ export function analyser(ctx: Contexte): Point[] {
     points.push({
       niveau: 'alerte',
       titre: 'Passoire thermique (G) : interdit à la location depuis 2025',
+      question: "Pouvez-vous fournir l'audit énergétique obligatoire ? Le prix tient-il compte des travaux ?",
       detail:
         "Vente : audit énergétique obligatoire. Le prix doit intégrer de gros travaux ; c'est un argument de négociation.",
     })
@@ -320,12 +350,14 @@ export function analyser(ctx: Contexte): Point[] {
     points.push({
       niveau: 'alerte',
       titre: 'Passoire thermique (F) : interdit à la location en 2028',
+      question: "Pouvez-vous fournir l'audit énergétique obligatoire ? Le prix tient-il compte des travaux ?",
       detail: 'Vente : audit énergétique obligatoire. Le prix doit intégrer les travaux.',
     })
   else if (e === 'E')
     points.push({
       niveau: 'attention',
       titre: 'Classe E : interdit à la location en 2034',
+      question: "Pouvez-vous fournir l'audit énergétique ? Des travaux d'isolation sont-ils envisagés ?",
       detail: 'Pèse sur la revente à moyen terme. Audit obligatoire à la vente depuis 2025.',
     })
 
@@ -348,13 +380,19 @@ export function analyser(ctx: Contexte): Point[] {
     points.push({
       niveau: 'alerte',
       titre: 'Chauffage au fioul',
+      question: 'Quel âge a la chaudière ? Quelle est la consommation réelle de fioul par an ? La cuve est-elle enterrée ?',
       detail:
         "Installer une chaudière fioul neuve est interdit depuis 2022 : à remplacer par une autre énergie (pompe à chaleur, bois…). Prévoir aussi la cuve.",
     })
   else if (/gpl|propane|butane|charbon/i.test(energie))
     points.push({ niveau: 'attention', titre: `Chauffage ${energie.toLowerCase()}`, detail: 'Énergie chère et carbonée.' })
   else if (/gaz/i.test(energie))
-    points.push({ niveau: 'info', titre: 'Chauffage au gaz', detail: 'Prix volatils ; vérifier l\'âge de la chaudière.' })
+    points.push({
+      niveau: 'info',
+      titre: 'Chauffage au gaz',
+      detail: "Prix volatils ; vérifier l'âge de la chaudière.",
+      question: "Quel âge a la chaudière, et quand a-t-elle été entretenue pour la dernière fois ?",
+    })
 
   // --- Isolation
   const parois: [string, string | undefined][] = [
@@ -370,18 +408,25 @@ export function analyser(ctx: Contexte): Point[] {
     points.push({
       niveau: 'attention',
       titre: `Isolation insuffisante : ${faibles.join(', ')}`,
+      question: "Des devis d'isolation ont-ils été demandés ? Quand l'isolation a-t-elle été refaite pour la dernière fois ?",
       detail: 'Postes de travaux probables. Voir la répartition des pertes de chaleur plus bas.',
     })
   else if (parois.some(([, q]) => q))
     points.push({ niveau: 'ok', titre: 'Aucune paroi jugée insuffisante' })
 
   if (dpe.indicateur_confort_ete === 'insuffisant')
-    points.push({ niveau: 'attention', titre: "Confort d'été insuffisant", detail: 'Risque de surchauffe en été.' })
+    points.push({
+      niveau: 'attention',
+      titre: "Confort d'été insuffisant",
+      detail: 'Risque de surchauffe en été.',
+      question: 'Quelle température fait-il dans les chambres en été ? Y a-t-il des volets ou une protection solaire ?',
+    })
 
   if (/ouverture des fen/i.test(dpe.type_ventilation ?? ''))
     points.push({
       niveau: 'attention',
       titre: 'Pas de ventilation (aération par les fenêtres)',
+      question: "Y a-t-il des traces d'humidité ou de moisissures ? Une VMC est-elle prévue ?",
       detail: "Risque d'humidité et de moisissures, surtout après isolation. Une VMC sera à prévoir.",
     })
 

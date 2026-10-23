@@ -20,6 +20,12 @@ const base: Criteres = {
   dateMin: '2025-01-01',
   dateMax: null,
   dateExacte: false,
+  periodes: [],
+  energies: [],
+  pompeAChaleur: false,
+  plainPied: false,
+  avecPhotovoltaique: false,
+  confortEteBon: false,
 }
 
 describe('lien partageable', () => {
@@ -38,6 +44,23 @@ describe('lien partageable', () => {
     expect([back.surfaceMin, back.surfaceMax]).toEqual([90, 110])
     expect(back.dateExacte).toBe(true)
     expect(back.inclureNeufs).toBe(false)
+  })
+
+  it('transmet les filtres de construction et d’équipement', () => {
+    const c: Criteres = {
+      ...base,
+      periodes: ['1989-2000', '2001-2005'],
+      energies: ['bois', 'electricite'],
+      pompeAChaleur: true,
+      plainPied: true,
+      avecPhotovoltaique: true,
+      confortEteBon: true,
+    }
+    expect(depuisParams(versParams(c))).toMatchObject(c)
+    expect(depuisParams(new URLSearchParams('c=35238&per=1800,1989-2000&en=nucleaire,gaz'))).toMatchObject({
+      periodes: ['1989-2000'],
+      energies: ['gaz'],
+    })
   })
 
   it('ignore les valeurs invalides', () => {

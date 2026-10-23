@@ -83,7 +83,48 @@ export interface DpeFilters {
   coutMin: number | null // fourchette « dépenses annuelles d'énergie » de l'annonce
   coutMax: number | null
   inclureNeufs: boolean
+  periodes: Periode[]
+  energies: Energie[]
+  pompeAChaleur: boolean
+  plainPied: boolean
+  avecPhotovoltaique: boolean
+  confortEteBon: boolean
 }
+
+// Périodes de construction telles qu'écrites dans la base (toujours renseignées,
+// contrairement à l'année exacte, absente d'environ 40 % des DPE de maisons)
+export const PERIODES = [
+  'avant 1948',
+  '1948-1974',
+  '1975-1977',
+  '1978-1982',
+  '1983-1988',
+  '1989-2000',
+  '2001-2005',
+  '2006-2012',
+  '2013-2021',
+  'après 2021',
+] as const
+export type Periode = (typeof PERIODES)[number]
+
+// Énergie principale de chauffage, regroupée en familles lisibles
+export const ENERGIES = {
+  electricite: { label: 'Électricité', valeurs: ['Électricité', "Électricité d'origine renouvelable utilisée dans le bâtiment"] },
+  gaz: { label: 'Gaz', valeurs: ['Gaz naturel'] },
+  bois: {
+    label: 'Bois',
+    valeurs: [
+      'Bois – Bûches',
+      'Bois – Granulés (pellets) ou briquettes',
+      'Bois – Plaquettes forestières',
+      'Bois – Plaquettes d’industrie',
+    ],
+  },
+  reseau: { label: 'Réseau de chaleur', valeurs: ['Réseau de Chauffage urbain'] },
+  fioul: { label: 'Fioul', valeurs: ['Fioul domestique'] },
+  gpl: { label: 'GPL / propane', valeurs: ['GPL', 'Propane', 'Butane'] },
+} as const
+export type Energie = keyof typeof ENERGIES
 
 // Les annonces affichent des entiers, la base a parfois une décimale (141,5 → « 142 »)
 const ROUNDING = 0.5
@@ -130,6 +171,14 @@ function buildParams(filters: DpeFilters): URLSearchParams {
   // Le coût du DPE est la valeur centrale de la fourchette affichée sur l'annonce
   if (filters.coutMin != null) p.set('cout_total_5_usages_gte', String(filters.coutMin))
   if (filters.coutMax != null) p.set('cout_total_5_usages_lte', String(filters.coutMax))
+  if (filters.periodes.length) p.set('periode_construction_in', filters.periodes.join(','))
+  if (filters.energies.length)
+    p.set('type_energie_principale_chauffage_in', filters.energies.flatMap((e) => ENERGIES[e].valeurs).join(','))
+  // Le type de générateur est un libellé libre (« PAC air/eau installée après 2017 »…) : recherche par préfixe
+  if (filters.pompeAChaleur) p.set('qs', 'type_generateur_chauffage_principal:PAC*')
+  if (filters.plainPied) p.set('nombre_niveau_logement_eq', '1')
+  if (filters.avecPhotovoltaique) p.set('presence_production_pv_eq', '1')
+  if (filters.confortEteBon) p.set('indicateur_confort_ete_eq', 'bon')
   return p
 }
 
