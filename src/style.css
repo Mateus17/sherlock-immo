@@ -1,0 +1,132 @@
+/* Couleurs reprises du logo : bleu nuit, indigo, ambre (manche de la loupe)
+   et les 7 couleurs officielles de l'étiquette énergie. */
+:root {
+  --bg: #f3f4fb;
+  --surface: #ffffff;
+  --text: #161b33;
+  --muted: #5f6684;
+  --border: #e0e3f0;
+  --accent: #4b55d6;
+  --accent-strong: #4b55d6; /* fond des boutons principaux, texte blanc lisible */
+  --accent-2: #c9792c;
+  --shadow: 0 1px 2px rgb(22 27 51 / 0.05), 0 8px 24px rgb(22 27 51 / 0.06);
+  --rainbow: linear-gradient(90deg, #009c6d, #52b153, #a5cc74, #f4e70f, #f0b40f, #eb8235, #d7221f);
+  color-scheme: light;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* Sombre : préférence système, sauf choix explicite via data-theme sur <html> */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0e1226;
+    --surface: #171c36;
+    --text: #e9ebf5;
+    --muted: #9aa0bd;
+    --border: #2a3154;
+    --accent: #8f98ff;
+    --accent-strong: #5560e0;
+    --accent-2: #f0a95a;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px rgb(0 0 0 / 0.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --bg: #0e1226;
+  --surface: #171c36;
+  --text: #e9ebf5;
+  --muted: #9aa0bd;
+  --border: #2a3154;
+  --accent: #8f98ff;
+  --accent-strong: #5560e0;
+  --accent-2: #f0a95a;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 30px rgb(0 0 0 / 0.25);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 500px at 0% -10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%),
+    radial-gradient(700px 420px at 100% 0%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  /* Encoche et barre d'accueil de l'iPhone en plein écran */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+/* Fine bande aux couleurs de l'étiquette énergie, en haut de l'écran */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1300;
+  height: calc(4px + env(safe-area-inset-top));
+  background: var(--rainbow);
+}
+a {
+  color: var(--accent);
+}
+.muted {
+  color: var(--muted);
+}
+input,
+button {
+  font: inherit;
+  color: inherit;
+}
+input[type='number'],
+input[type='date'],
+input[type='text'] {
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  outline-offset: 1px;
+}
+input[type='checkbox'],
+input[type='range'] {
+  accent-color: var(--accent);
+}
+button {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    border-color 0.12s ease;
+}
+button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.primary {
+  background: linear-gradient(135deg, var(--accent-strong), color-mix(in srgb, var(--accent-strong) 72%, #9a4fd6));
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+button.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.leaflet-popup-content {
+  line-height: 1.5;
+}

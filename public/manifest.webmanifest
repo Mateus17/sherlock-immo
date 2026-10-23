@@ -1,0 +1,21 @@
+{
+  "id": "./",
+  "name": "Sherlock Immo",
+  "short_name": "Sherlock",
+  "description": "Retrouvez la maison d'une annonce, puis vérifiez ce que l'annonce ne dit pas.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#111733",
+  "theme_color": "#111733",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
