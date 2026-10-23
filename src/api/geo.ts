@@ -1,5 +1,7 @@
 // API Géo (geo.api.gouv.fr) : référentiel officiel des communes, sans clé.
 
+import { getJson } from '../lib/http'
+
 export interface Commune {
   nom: string
   code: string // code INSEE
@@ -59,9 +61,7 @@ export async function searchCommunes(q: CommuneQuery, signal?: AbortSignal): Pro
   if (codePostal) params.set('codePostal', codePostal)
   if (dep) params.set('codeDepartement', dep)
 
-  const res = await fetch(`https://geo.api.gouv.fr/communes?${params}`, { signal })
-  if (!res.ok) throw new Error(`API Géo : HTTP ${res.status}`)
-  const data: GeoApiCommune[] = await res.json()
+  const data = await getJson<GeoApiCommune[]>(`https://geo.api.gouv.fr/communes?${params}`, { service: 'API Géo', signal })
 
   return data
     .filter((c) => c.centre)
@@ -84,43 +84,32 @@ interface GeoApiCommuneFull extends GeoApiCommune {
   population?: number
 }
 
-const departementCache = new Map<string, Promise<NearbyCommune[]>>()
-
-function fetchDepartementCommunes(dep: string): Promise<NearbyCommune[]> {
-  let cached = departementCache.get(dep)
-  if (!cached) {
-    cached = fetch(
-      `https://geo.api.gouv.fr/departements/${dep}/communes?fields=nom,code,codesPostaux,codeDepartement,centre,population`,
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error(`API Géo : HTTP ${res.status}`)
-        return res.json() as Promise<GeoApiCommuneFull[]>
-      })
-      .then((list) =>
-        list
-          .filter((c) => c.centre)
-          .map((c) => ({
-            nom: c.nom,
-            code: c.code,
-            codesPostaux: c.codesPostaux,
-            departement: c.codeDepartement,
-            lon: c.centre!.coordinates[0],
-            lat: c.centre!.coordinates[1],
-            population: c.population,
-            distanceKm: 0,
-          })),
-      )
-    // Un échec ne doit pas rester en cache
-    cached.catch(() => departementCache.delete(dep))
-    departementCache.set(dep, cached)
-  }
-  return cached
+// Le module réseau met en cache : chaque département n'est téléchargé qu'une fois
+async function fetchDepartementCommunes(dep: string): Promise<NearbyCommune[]> {
+  const list = await getJson<GeoApiCommuneFull[]>(
+    `https://geo.api.gouv.fr/departements/${dep}/communes?fields=nom,code,codesPostaux,codeDepartement,centre,population`,
+    { service: 'API Géo' },
+  )
+  return list
+    .filter((c) => c.centre)
+    .map((c) => ({
+      nom: c.nom,
+      code: c.code,
+      codesPostaux: c.codesPostaux,
+      departement: c.codeDepartement,
+      lon: c.centre!.coordinates[0],
+      lat: c.centre!.coordinates[1],
+      population: c.population,
+      distanceKm: 0,
+    }))
 }
 
 async function departementAt(lat: number, lon: number): Promise<string | null> {
-  const res = await fetch(`https://geo.api.gouv.fr/communes?lat=${lat}&lon=${lon}&fields=codeDepartement`)
-  if (!res.ok) return null
-  const [c] = (await res.json()) as GeoApiCommune[]
+  // Coordonnées arrondies (~100 m) pour que le cache serve d'une recherche à l'autre
+  const [la, lo] = [lat.toFixed(3), lon.toFixed(3)]
+  const [c] = await getJson<GeoApiCommune[]>(`https://geo.api.gouv.fr/communes?lat=${la}&lon=${lo}&fields=codeDepartement`, {
+    service: 'API Géo',
+  })
   return c?.codeDepartement ?? null
 }
 
@@ -157,19 +146,21 @@ export async function nearbyCommunes(center: Commune, radiusKm: number): Promise
 
 // Commune par code INSEE (pour rouvrir une recherche partagée par lien)
 export async function getCommune(code: string, signal?: AbortSignal): Promise<Commune | null> {
-  const res = await fetch(
-    `https://geo.api.gouv.fr/communes/${encodeURIComponent(code)}?fields=nom,code,codesPostaux,codeDepartement,centre`,
-    { signal },
-  )
-  if (!res.ok) return null
-  const c: GeoApiCommune = await res.json()
-  if (!c.centre) return null
-  return {
-    nom: c.nom,
-    code: c.code,
-    codesPostaux: c.codesPostaux,
-    departement: c.codeDepartement,
-    lon: c.centre.coordinates[0],
-    lat: c.centre.coordinates[1],
+  try {
+    const c = await getJson<GeoApiCommune>(
+      `https://geo.api.gouv.fr/communes/${encodeURIComponent(code)}?fields=nom,code,codesPostaux,codeDepartement,centre`,
+      { service: 'API Géo', signal },
+    )
+    if (!c.centre) return null
+    return {
+      nom: c.nom,
+      code: c.code,
+      codesPostaux: c.codesPostaux,
+      departement: c.codeDepartement,
+      lon: c.centre.coordinates[0],
+      lat: c.centre.coordinates[1],
+    }
+  } catch {
+    return null
   }
 }

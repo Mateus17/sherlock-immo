@@ -2,6 +2,7 @@
 // Publique, sans clé, CORS ouvert. Filtres appliqués côté serveur.
 // Doc : https://data.ademe.fr/datasets/dpe03existant/api-doc
 
+import { getJson } from '../lib/http'
 import type { Commune } from './geo'
 
 const API = 'https://data.ademe.fr/data-fair/api/v1/datasets'
@@ -182,10 +183,8 @@ function buildParams(filters: DpeFilters): URLSearchParams {
   return p
 }
 
-async function fetchLines(url: string, signal?: AbortSignal): Promise<LinesResponse> {
-  const res = await fetch(url, { signal })
-  if (!res.ok) throw new Error(`API ADEME : HTTP ${res.status}`)
-  return res.json()
+function fetchLines(url: string, signal?: AbortSignal): Promise<LinesResponse> {
+  return getJson<LinesResponse>(url, { service: 'ADEME (DPE)', signal })
 }
 
 export interface SearchResult {
@@ -244,8 +243,7 @@ export function dedupe(list: Dpe[]): Dpe[] {
 
 export async function getDatasetUpdatedAt(): Promise<string | null> {
   try {
-    const res = await fetch(`${DATASET_URL}?select=dataUpdatedAt`)
-    const meta = await res.json()
+    const meta = await getJson<{ dataUpdatedAt?: string }>(`${DATASET_URL}?select=dataUpdatedAt`, { service: 'ADEME' })
     return meta.dataUpdatedAt ?? null
   } catch {
     return null
@@ -445,9 +443,10 @@ export async function getOldDpes(d: Dpe, signal?: AbortSignal): Promise<OldDpe[]
     select:
       'numero_dpe,date_etablissement_dpe,classe_consommation_energie,consommation_energie,classe_estimation_ges,surface_thermique_lot,geo_adresse,tr002_type_batiment_description',
   })
-  const res = await fetch(`${OLD_DPE_URL}/lines?${p}`, { signal })
-  if (!res.ok) throw new Error(`API ADEME (DPE avant 2021) : HTTP ${res.status}`)
-  const { results } = (await res.json()) as { results: OldDpe[] }
+  const { results } = await getJson<{ results: OldDpe[] }>(`${OLD_DPE_URL}/lines?${p}`, {
+    service: 'ADEME (DPE avant 2021)',
+    signal,
+  })
   const target = normalizeAddress(d.adresse_ban)
   return results.filter(
     (o) => o.geo_adresse && normalizeAddress(o.geo_adresse) === target && o.classe_consommation_energie !== 'N',
@@ -479,9 +478,10 @@ export async function getAudits(identifiantBan: string, signal?: AbortSignal): P
     select:
       'n_audit,date_etablissement_audit,categorie_scenario,etape_travaux,classe_bilan_dpe,cout_travaux,couts_cumules_travaux,travaux_realises,ep_conso_5_usages_m2',
   })
-  const res = await fetch(`${AUDIT_URL}/lines?${p}`, { signal })
-  if (!res.ok) throw new Error(`API ADEME (audits) : HTTP ${res.status}`)
-  const { results } = (await res.json()) as { results: AuditEtape[] }
+  const { results } = await getJson<{ results: AuditEtape[] }>(`${AUDIT_URL}/lines?${p}`, {
+    service: 'ADEME (audits)',
+    signal,
+  })
   const byAudit = new Map<string, Audit>()
   for (const e of results) {
     const a = byAudit.get(e.n_audit) ?? { numero: e.n_audit, date: e.date_etablissement_audit, etapes: [] }

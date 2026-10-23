@@ -3,6 +3,8 @@
 // - risques : Géorisques (rapport complet en un appel)
 // - ventes passées : API de l'application DVF d'Etalab, par section cadastrale
 
+import { getJson } from '../lib/http'
+
 const APICARTO = 'https://apicarto.ign.fr/api'
 
 type Polygon = { type: 'Polygon' | 'MultiPolygon'; coordinates: unknown }
@@ -25,11 +27,7 @@ function squareGeom(lat: number, lon: number, m: number) {
   return encodeURIComponent(JSON.stringify({ type: 'Polygon', coordinates: [ring] }))
 }
 
-async function getJson<T>(url: string, what: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(url, { signal })
-  if (!res.ok) throw new Error(`${what} : HTTP ${res.status}`)
-  return res.json()
-}
+const get = <T>(url: string, service: string, signal?: AbortSignal) => getJson<T>(url, { service, signal })
 
 // ---------------------------------------------------------------------------
 // Cadastre
@@ -58,7 +56,7 @@ interface CadastreFeature {
 }
 
 export async function getParcelle(lat: number, lon: number, signal?: AbortSignal): Promise<Parcelle | null> {
-  const fc = await getJson<{ features: CadastreFeature[] }>(
+  const fc = await get<{ features: CadastreFeature[] }>(
     `${APICARTO}/cadastre/parcelle?geom=${pointGeom(lat, lon)}`,
     'Cadastre',
     signal,
@@ -109,8 +107,8 @@ export interface Urbanisme {
 
 export async function getUrbanisme(lat: number, lon: number, signal?: AbortSignal): Promise<Urbanisme> {
   const [ici, autour] = await Promise.all([
-    getJson<{ features: ZoneFeature[] }>(`${APICARTO}/gpu/zone-urba?geom=${pointGeom(lat, lon)}`, 'Urbanisme', signal),
-    getJson<{ features: ZoneFeature[] }>(`${APICARTO}/gpu/zone-urba?geom=${squareGeom(lat, lon, 150)}`, 'Urbanisme', signal),
+    get<{ features: ZoneFeature[] }>(`${APICARTO}/gpu/zone-urba?geom=${pointGeom(lat, lon)}`, 'Urbanisme', signal),
+    get<{ features: ZoneFeature[] }>(`${APICARTO}/gpu/zone-urba?geom=${squareGeom(lat, lon, 150)}`, 'Urbanisme', signal),
   ])
   const zone = ici.features[0] ? toZone(ici.features[0]) : null
   const seen = new Set<string>(zone ? [zone.libelle] : [])
@@ -143,7 +141,7 @@ interface GeorisquesItem {
 }
 
 export async function getRisques(lat: number, lon: number, signal?: AbortSignal): Promise<Risques> {
-  const r = await getJson<{
+  const r = await get<{
     url: string
     risquesNaturels: Record<string, GeorisquesItem>
     risquesTechnologiques: Record<string, GeorisquesItem>
@@ -165,7 +163,7 @@ export async function getRisques(lat: number, lon: number, signal?: AbortSignal)
 // Ventes passées (DVF)
 // ---------------------------------------------------------------------------
 
-interface DvfRow {
+export interface DvfRow {
   id_mutation: string
   date_mutation: string
   nature_mutation: string
@@ -199,7 +197,7 @@ const num = (v: string | undefined) => {
 }
 
 // Une mutation = plusieurs lignes (une par local et par parcelle) qui répètent le prix total
-function grouper(rows: DvfRow[]): Vente[] {
+export function grouperVentes(rows: DvfRow[]): Vente[] {
   const byId = new Map<string, DvfRow[]>()
   for (const r of rows) byId.set(r.id_mutation, [...(byId.get(r.id_mutation) ?? []), r])
   return [...byId.entries()].map(([id, rs]) => {
@@ -247,12 +245,12 @@ export async function getMarche(
   type: 'Maison' | 'Appartement',
   signal?: AbortSignal,
 ): Promise<MarcheLocal> {
-  const { mutations } = await getJson<{ mutations: DvfRow[] }>(
+  const { mutations } = await get<{ mutations: DvfRow[] }>(
     `https://app.dvf.etalab.gouv.fr/api/mutations3/${parcelle.codeInsee}/${parcelle.prefixe}${parcelle.section}`,
     'DVF',
     signal,
   )
-  const ventes = grouper(mutations).filter((v) => v.nature.startsWith('Vente'))
+  const ventes = grouperVentes(mutations).filter((v) => v.nature.startsWith('Vente'))
   const depuis = new Date()
   depuis.setFullYear(depuis.getFullYear() - 3)
   const iso = depuis.toISOString().slice(0, 10)
