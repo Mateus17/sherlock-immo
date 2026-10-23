@@ -46,6 +46,16 @@ describe('getJson', () => {
     expect(await getJson('https://exemple.test/c', { service: 'Géorisques' })).toEqual({ repare: true })
   })
 
+  it('explique un dépassement du budget de l’API (429)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response('trop', { status: 429, headers: { 'Retry-After': '39' } }))),
+    )
+    await expect(getJson('https://exemple.test/f', { service: 'ADEME (DPE)' })).rejects.toThrow(
+      "ADEME (DPE) : trop de demandes d'un coup, réessayez dans 39 s",
+    )
+  })
+
   it('signale un délai dépassé', async () => {
     vi.stubGlobal(
       'fetch',

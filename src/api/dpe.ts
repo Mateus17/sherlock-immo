@@ -156,6 +156,9 @@ function buildParams(filters: DpeFilters): URLSearchParams {
     size: String(PAGE_SIZE),
     select: FIELDS.join(','),
     sort: '-date_etablissement_dpe',
+    // Total exact jusqu'à un seuil, estimé au-delà : bien moins coûteux pour l'API,
+    // qui limite le temps de calcul cumulé par utilisateur
+    count: 'estimate',
   })
   if (filters.etiquettesDpe.length) p.set('etiquette_dpe_in', filters.etiquettesDpe.join(','))
   if (filters.etiquettesGes.length) p.set('etiquette_ges_in', filters.etiquettesGes.join(','))
@@ -409,7 +412,7 @@ export async function getDpeDetail(
   signal?: AbortSignal,
 ): Promise<DpeDetail | null> {
   const fields = source === 'neuf' ? DETAIL_FIELDS.filter((f) => !ABSENTS_NEUF.has(f)) : DETAIL_FIELDS
-  const p = new URLSearchParams({ size: '1', numero_dpe_eq: numero, select: fields.join(',') })
+  const p = new URLSearchParams({ size: '1', numero_dpe_eq: numero, select: fields.join(','), count: 'false' })
   const r = await fetchLines(`${SOURCES[source]}/lines?${p}`, signal)
   return r.results[0] ? ({ ...r.results[0], _source: source } as DpeDetail) : null
 }
@@ -421,6 +424,7 @@ export async function getAddressHistory(identifiantBan: string, signal?: AbortSi
     identifiant_ban_eq: identifiantBan,
     sort: 'date_etablissement_dpe',
     select: FIELDS.join(','),
+    count: 'false',
   })
   const parts = await Promise.all(
     (Object.keys(SOURCES) as Source[]).map(async (source) =>
@@ -459,6 +463,7 @@ export async function getOldDpes(d: Dpe, signal?: AbortSignal): Promise<OldDpe[]
     size: '100',
     geo_distance: `${pt[1]},${pt[0]},50m`,
     sort: 'date_etablissement_dpe',
+    count: 'false',
     select:
       'numero_dpe,date_etablissement_dpe,classe_consommation_energie,consommation_energie,classe_estimation_ges,surface_thermique_lot,geo_adresse,tr002_type_batiment_description',
   })
@@ -494,6 +499,7 @@ export async function getAudits(identifiantBan: string, signal?: AbortSignal): P
   const p = new URLSearchParams({
     size: '200',
     identifiant_ban_eq: identifiantBan,
+    count: 'false',
     select:
       'n_audit,date_etablissement_audit,categorie_scenario,etape_travaux,classe_bilan_dpe,cout_travaux,couts_cumules_travaux,travaux_realises,ep_conso_5_usages_m2',
   })

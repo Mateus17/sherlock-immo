@@ -9,6 +9,7 @@ import ResultsTable from './components/ResultsTable.vue'
 import ThemeToggle from './components/ThemeToggle.vue'
 import { useAnnonce } from './composables/useAnnonce'
 import { useCriteres } from './composables/useCriteres'
+import { useFavoris } from './composables/useFavoris'
 import { useLienPartage } from './composables/useLienPartage'
 import { useRecherche } from './composables/useRecherche'
 import './styles/formulaire.css'
@@ -17,12 +18,14 @@ import './styles/formulaire.css'
 const ResultsMap = defineAsyncComponent(() => import('./components/ResultsMap.vue'))
 const DpeDetail = defineAsyncComponent(() => import('./components/DpeDetail.vue'))
 const SourcesPage = defineAsyncComponent(() => import('./components/SourcesPage.vue'))
+const FavorisPage = defineAsyncComponent(() => import('./components/FavorisPage.vue'))
 
 const { form, toFilters } = useCriteres()
 const recherche = useRecherche()
 const { loading, error, searched, hasResults, displayed, selectedId, detailDpe, parcelleGeom, shownRayon } = recherche
 const { annonce, bilan, appliquer } = useAnnonce()
 const lien = useLienPartage()
+const { liste: favoris } = useFavoris()
 
 const updatedAt = ref<string | null>(null)
 
@@ -42,10 +45,12 @@ function nouvelleRecherche() {
 // La surface saisie dans les critères sert de point de comparaison dans la fiche
 const surfaceAnnonce = computed(() => (form.surfaceMode === 'cible' ? form.surfaceCible : null))
 
-// Pages secondaires : simples ancres (#sources), sans routeur
-const page = ref(location.hash === '#sources' ? 'sources' : 'app')
+// Pages secondaires : simples ancres (#sources, #favoris), sans routeur
+const pageDepuisAncre = () =>
+  location.hash === '#sources' ? 'sources' : location.hash === '#favoris' ? 'favoris' : 'app'
+const page = ref(pageDepuisAncre())
 const onHash = () => {
-  page.value = location.hash === '#sources' ? 'sources' : 'app'
+  page.value = pageDepuisAncre()
   window.scrollTo({ top: 0 })
 }
 
@@ -59,6 +64,7 @@ onMounted(async () => {
 <template>
   <ThemeToggle />
   <SourcesPage v-if="page === 'sources'" :updated-at="updatedAt" />
+  <FavorisPage v-else-if="page === 'favoris'" />
   <main v-else class="layout" :class="{ landing: !hasResults }">
     <aside class="filters" aria-label="Critères de recherche">
       <header>
@@ -71,6 +77,11 @@ onMounted(async () => {
         <p v-else-if="!hasResults && searched && !loading" class="status" role="status">
           Aucun DPE ne correspond. Élargissez la surface, la zone ou ajoutez des étiquettes.
         </p>
+        <nav class="liens" aria-label="Pages">
+          <a href="#favoris" class="lien-favoris"
+            >★ Mes favoris<template v-if="favoris.length"> ({{ favoris.length }})</template></a
+          >
+        </nav>
         <InstallButton v-if="!hasResults" class="install" />
       </header>
 
@@ -235,6 +246,14 @@ footer {
 }
 .landing .tagline {
   margin: 0;
+}
+.lien-favoris {
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--accent-2);
+}
+.layout:not(.landing) .liens {
+  margin-top: 6px;
 }
 .landing header .status {
   flex-basis: 100%;

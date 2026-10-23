@@ -48,6 +48,12 @@ async function telecharger<T>(url: string, service: string): Promise<T> {
     if (err.name === 'TimeoutError') throw new ErreurReseau(`${service} ne répond pas (délai dépassé)`, service)
     throw new ErreurReseau(`${service} injoignable (connexion ?)`, service)
   }
+  if (res.status === 429) {
+    // Budget de calcul dépassé (l'ADEME limite le temps de traitement cumulé par utilisateur)
+    const attente = Number(res.headers.get('retry-after'))
+    const delai = Number.isFinite(attente) && attente > 0 ? `dans ${Math.ceil(attente)} s` : 'dans une minute'
+    throw new ErreurReseau(`${service} : trop de demandes d'un coup, réessayez ${delai}`, service)
+  }
   if (!res.ok) throw new ErreurReseau(`${service} : erreur ${res.status}`, service)
   return res.json() as Promise<T>
 }

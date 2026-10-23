@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+import L from '../lib/leaflet'
 import { DPE_COLORS, observatoireUrl, parseGeopoint, type Dpe } from '../api/dpe'
 import type { Commune } from '../api/geo'
 
@@ -17,7 +16,22 @@ const emit = defineEmits<{ select: [id: string] }>()
 const el = ref<HTMLElement>()
 let map: L.Map
 let resizeObserver: ResizeObserver | undefined
-const markersLayer = L.layerGroup()
+// Points regroupés tant qu'on n'est pas assez zoomé pour les distinguer
+const markersLayer = L.markerClusterGroup({
+  chunkedLoading: true,
+  showCoverageOnHover: false,
+  disableClusteringAtZoom: 16,
+  maxClusterRadius: 45,
+  iconCreateFunction: (cluster) => {
+    const n = cluster.getChildCount()
+    const taille = n < 10 ? 32 : n < 100 ? 38 : 46
+    return L.divIcon({
+      html: `<span>${n}</span>`,
+      className: 'groupe-dpe',
+      iconSize: [taille, taille],
+    })
+  },
+})
 const zonesLayer = L.layerGroup()
 const parcelleLayer = L.layerGroup()
 const markers = new Map<string, L.CircleMarker>()
@@ -130,8 +144,11 @@ watch(
   (id) => {
     const m = id ? markers.get(id) : undefined
     if (!m) return
-    map.setView(m.getLatLng(), Math.max(map.getZoom(), 16))
-    m.openPopup()
+    // Le point peut être caché dans un groupe : on zoome jusqu'à lui
+    markersLayer.zoomToShowLayer(m, () => {
+      map.setView(m.getLatLng(), Math.max(map.getZoom(), 16))
+      m.openPopup()
+    })
   },
 )
 </script>
@@ -144,6 +161,21 @@ watch(
     aria-label="Carte des résultats (la liste ci-dessous donne les mêmes logements au clavier)"
   ></div>
 </template>
+
+<style>
+/* Groupes de points (non scopé : Leaflet crée ces éléments hors du composant) */
+.groupe-dpe {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-strong) 85%, transparent);
+  border: 3px solid color-mix(in srgb, #fff 70%, transparent);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85em;
+}
+</style>
 
 <style scoped>
 .map {

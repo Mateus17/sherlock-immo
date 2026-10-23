@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCriteres } from '../composables/useCriteres'
+import { useFavoris } from '../composables/useFavoris'
 import { useLienPartage } from '../composables/useLienPartage'
 import { useRecherche } from '../composables/useRecherche'
 import { telechargerCsv } from '../lib/export-csv'
@@ -9,6 +10,7 @@ const emit = defineEmits<{ nouvelle: [] }>()
 const { form } = useCriteres()
 const { error, total, displayed, hiddenDuplicates, totalNeufs, hasMore, loading, more } = useRecherche()
 const { lienCopie, partager } = useLienPartage()
+const { liste: favoris } = useFavoris()
 const n = (v: number) => v.toLocaleString('fr-FR')
 </script>
 
@@ -32,6 +34,9 @@ const n = (v: number) => v.toLocaleString('fr-FR')
     </button>
     <button v-if="hasMore" type="button" :disabled="loading" @click="more">Charger plus</button>
     <button type="button" @click="telechargerCsv(displayed)">Exporter CSV</button>
+    <a href="#favoris" class="favoris"
+      >★ Favoris<template v-if="favoris.length"> ({{ favoris.length }})</template></a
+    >
   </div>
 </template>
 
@@ -55,6 +60,11 @@ const n = (v: number) => v.toLocaleString('fr-FR')
   align-items: center;
   gap: 6px;
   cursor: pointer;
+}
+.favoris {
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--accent-2);
 }
 .error {
   color: #c62828;
