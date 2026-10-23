@@ -2,6 +2,32 @@
 
 Les évolutions notables de Sherlock Immo. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions selon [SemVer](https://semver.org/lang/fr/).
 
+## [1.1.0] — 2026-10-24
+
+### Ajouté
+
+- Filtres **Construction et équipements** : période de construction, énergie de chauffage, pompe à chaleur, plain-pied, photovoltaïque, bon confort d'été (repris dans le lien partageable).
+- **Questions à poser lors de la visite**, générées à partir des points d'attention.
+- **Dossier imprimable** de la fiche (papier ou PDF).
+- **Favoris** avec notes et prix, page « Mes favoris ».
+- **Comparateur** de 2 ou 3 logements.
+- Points **regroupés** sur la carte quand ils sont nombreux.
+
+### Amélioré
+
+- Chargement initial divisé par 2,5 : carte, fiche et pages secondaires chargées à la demande.
+- Accès réseau commun : délai maximal, messages d'erreur lisibles, cache (rouvrir une fiche ne relance aucun appel).
+- Requêtes moins coûteuses pour l'API de l'ADEME, qui limite le temps de calcul par utilisateur, et message clair en cas de dépassement.
+- Accessibilité : clavier partout, lecteurs d'écran, Échap pour fermer la fiche ; aucun défaut à l'audit axe.
+- Politique de sécurité du contenu : seuls les services publics utilisés sont joignables.
+
+### Technique
+
+- Code découpé en composables et composants (formulaire, fiche).
+- Mise à jour : Vite 8, Vitest 5, vue-tsc 3, TypeScript 6.
+- ESLint et Prettier vérifiés dans la CI ; 28 tests.
+- Code de conduite et politique de sécurité.
+
 ## [1.0.0] — 2026-10-24
 
 Première version publique.
@@ -30,4 +56,5 @@ Première version publique.
 - Installable (PWA) sur ordinateur, Android et iOS, thème clair et sombre.
 - Page « Sources et outils ».
 
+[1.1.0]: https://github.com/Mateus17/sherlock-immo/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Mateus17/sherlock-immo/releases/tag/v1.0.0

@@ -8,9 +8,10 @@ Sherlock Immo est une application **100 % front-end**. Il n'y a ni serveur ni ba
 |---|---|
 | Interface | [Vue 3](https://vuejs.org) (Composition API, `<script setup>`) + TypeScript |
 | Build | [Vite](https://vite.dev) |
-| Carte | [Leaflet](https://leafletjs.com) + tuiles IGN Géoplateforme |
+| Carte | [Leaflet](https://leafletjs.com) + [leaflet.markercluster](https://github.com/Leaflet/Leaflet.markercluster) + tuiles IGN Géoplateforme |
 | Installation (ordinateur, Android, iOS) | Manifest web + service worker (PWA) |
 | Icônes | [sharp](https://sharp.pixelplumbing.com) (génération des PNG à partir du SVG) |
+| Qualité | Vitest (+ happy-dom), ESLint, Prettier, vue-tsc, axe-core (audit d'accessibilité) |
 
 Aucune autre dépendance à l'exécution.
 
@@ -19,42 +20,56 @@ Aucune autre dépendance à l'exécution.
 ```
 src/
 ├── main.ts                    point d'entrée, enregistrement du service worker
-├── App.vue                    formulaire, état de la recherche, mise en page
-├── style.css                  thème (variables CSS clair / sombre)
+├── App.vue                    mise en page, pages (#sources, #favoris), chargement à la demande
+├── style.css                  thème (variables CSS clair / sombre), accessibilité
+├── styles/
+│   ├── formulaire.css         formulaire de recherche (colonne et page d'accueil)
+│   └── fiche.css              fiche d'un logement, version imprimable
+├── composables/               état partagé, sans dépendance à un composant
+│   ├── useCriteres.ts         critères du formulaire (mémorisés), conversion en filtres d'API
+│   ├── useRecherche.ts        résultats, pagination, sélection, fiche ouverte
+│   ├── useAnnonce.ts          annonce collée → critères
+│   ├── useLienPartage.ts      critères ↔ adresse de la page, bouton Partager
+│   ├── useFiche.ts            chargement de toutes les données d'une fiche
+│   └── useFavoris.ts          favoris, notes, sélection du comparateur (navigateur)
 ├── api/
 │   ├── dpe.ts                 ADEME : recherche, détail, historique, audits
 │   ├── geo.ts                 API Géo : communes, communes voisines
 │   └── territoire.ts          cadastre, PLU, Géorisques, DVF
-├── lib/
-│   ├── verification.ts        règles « points d'attention » (fonctions pures)
+├── lib/                       fonctions pures, testées
+│   ├── http.ts                accès réseau : délai maximal, erreurs lisibles, cache
+│   ├── verification.ts        règles « points d'attention » et questions de visite
 │   ├── annonce.ts             lecture d'une annonce collée (expressions régulières)
-│   ├── lien.ts                critères ↔ paramètres d'adresse (lien partageable)
-│   ├── presse-papiers.ts      copie avec repli
+│   ├── lien.ts                critères ↔ paramètres d'adresse
+│   ├── leaflet.ts             Leaflet + regroupement des points
+│   ├── export-csv.ts, format.ts, saisie.ts, presse-papiers.ts
 │   └── __tests__/             tests Vitest
 └── components/
-    ├── AnnoncePaste.vue       zone « coller une annonce »
-    ├── CityPicker.vue         saisie des communes (+ filtre département)
-    ├── NearbyCommunes.vue     liste à cocher des communes voisines
-    ├── EtiquettePicker.vue    boutons A → G
-    ├── ResultsMap.vue         carte Leaflet
-    ├── ResultsTable.vue       tableau triable
-    ├── DpeDetail.vue          fiche de vérification
-    ├── DpeBadge.vue           pastille d'étiquette
-    ├── InstallButton.vue      bouton « Installer l'application » (aide iOS)
-    ├── SourcesPage.vue        page « Sources et outils » (#sources)
-    └── ThemeToggle.vue        bouton clair / sombre
+    ├── filtres/               un composant par bloc du formulaire (+ SearchForm)
+    ├── fiche/                 une section de fiche par composant
+    ├── DpeDetail.vue          fiche : assemble les sections, favori, impression
+    ├── FavorisPage.vue        page « Mes favoris » (#favoris)
+    ├── Comparateur.vue        comparaison de 2 ou 3 favoris
+    ├── ResultsBar.vue         compteur, partage, export
+    ├── ResultsMap.vue         carte (chargée à la demande)
+    ├── ResultsTable.vue       tableau triable et accessible au clavier
+    ├── AnnoncePaste.vue, CityPicker.vue, NearbyCommunes.vue, EtiquettePicker.vue
+    ├── DpeBadge.vue, InstallButton.vue, SourcesPage.vue, ThemeToggle.vue
 public/
 ├── manifest.webmanifest       description de l'application installable
 ├── sw.js                      service worker (ouverture hors ligne)
+├── og.png                     image d'aperçu des liens partagés
 └── icons/icon.svg             logo, source de toutes les icônes
-scripts/make-icons.mjs         génère les icônes PNG à partir du SVG
+scripts/make-icons.mjs         génère les icônes PNG et og.png à partir du SVG
 ```
+
+Les composables tiennent un **état unique au niveau du module** (`useCriteres`, `useRecherche`, `useFavoris`) : chaque composant qui les appelle lit et modifie le même état, sans passer de props sur plusieurs niveaux. `useFiche` est l'exception : il crée un état par fiche ouverte.
 
 ## Flux d'une recherche
 
 0. Facultatif : `lireAnnonce()` transforme une annonce collée en indices, qui remplissent le formulaire. La commune est retrouvée par le code postal (ou « Ville (35) ») via l'API Géo.
 
-1. `App.vue` transforme le formulaire en `DpeFilters` (la surface « valeur ± tolérance » devient un intervalle, les dates exactes deviennent `gte = lte`, etc.).
+1. `useCriteres().toFilters()` transforme le formulaire en `DpeFilters` (la surface « valeur ± tolérance » devient un intervalle, les dates exactes deviennent `gte = lte`, etc.).
 2. `searchDpe()` construit une requête par base (existants, et neufs si la case est cochée) et par zone. Sans rayon, toutes les communes tiennent en une requête (`code_insee_ban_in`). Avec un rayon, il faut une requête par commune, car l'API n'accepte qu'un seul `geo_distance`.
 3. Les résultats sont fusionnés et dédoublonnés par numéro de DPE. Chaque ligne garde sa base d'origine (`_source`).
 4. « Charger plus » suit le curseur `next` de chaque requête.
@@ -63,7 +78,7 @@ scripts/make-icons.mjs         génère les icônes PNG à partir du SVG
 
 ## Flux de la fiche
 
-`DpeDetail.vue` lance en parallèle, et indépendamment (une panne n'empêche pas le reste de s'afficher) :
+`useFiche()` lance en parallèle, et indépendamment (une panne n'empêche pas le reste de s'afficher) :
 
 - le détail complet du DPE ;
 - l'historique de l'adresse (même `identifiant_ban`, dans les deux bases) ;
@@ -73,11 +88,20 @@ scripts/make-icons.mjs         génère les icônes PNG à partir du SVG
 - le rapport Géorisques ;
 - la zone du PLU sous le point et autour (carré de ±150 m).
 
-Tout est ensuite passé à `analyser()` (`src/lib/verification.ts`), qui renvoie une liste de `Point { niveau, titre, detail }` triée par gravité. Ce sont des **fonctions pures**, sans appel réseau : faciles à lire, à tester et à enrichir.
+Tout est ensuite passé à `analyser()` (`src/lib/verification.ts`), qui renvoie une liste de `Point { niveau, titre, detail, question }` triée par gravité. Les `question` alimentent la section « Questions à poser lors de la visite » du dossier imprimable. Ce sont des **fonctions pures**, sans appel réseau : faciles à lire, à tester et à enrichir.
+
+## Accès réseau
+
+Tous les appels passent par `getJson()` (`src/lib/http.ts`) :
+
+- **délai maximal** de 20 s, puis message « … ne répond pas » ;
+- **erreurs nommées** par service, affichées dans la fiche sans bloquer les autres sections ;
+- **cache** en mémoire et en `sessionStorage` (1 h, réponses de moins de 150 000 caractères) : rouvrir une fiche ne relance aucun appel. Un échec n'est jamais mis en cache ;
+- un abandon côté appelant (nouvelle recherche, fiche fermée) ne coupe pas un téléchargement partagé par une autre partie de l'app.
 
 ## Sources de données
 
-Toutes ont été vérifiées sans clé, avec CORS, et une rafale de requêtes parallèles n'a déclenché aucun refus.
+Toutes sont sans clé et ouvertes en CORS. La **politique de sécurité du contenu** (`vite.config.ts`, ajoutée au build) n'autorise que ces domaines : une nouvelle source doit y être ajoutée.
 
 ### ADEME (data-fair)
 
@@ -94,7 +118,10 @@ Filtres utilisés : `{champ}_eq`, `_in`, `_gte`, `_lte`, `geo_distance=lon,lat,1
 
 - un `select` contenant un champ absent du jeu renvoie une **erreur 400**. La base des neufs n'a pas `qualite_isolation_plancher_haut_comble_perdu` ni `qualite_isolation_plancher_haut_toit_terrasse` ;
 - la consommation et les émissions ont parfois une décimale (186,5) alors que l'annonce affiche un entier : la recherche prend une fenêtre de ±0,5 ;
-- la date de mise à jour du jeu est lue dans `dataUpdatedAt`.
+- la date de mise à jour du jeu est lue dans `dataUpdatedAt` ;
+- **l'API limite le temps de calcul cumulé par utilisateur** : au-delà, elle répond `429` avec `Retry-After` (environ 40 s). Compter le total exact des résultats est l'opération la plus coûteuse : les recherches utilisent `count=estimate` (exact jusqu'à un seuil, estimé au-delà) et les autres appels `count=false` ;
+- le type de générateur (« PAC air/eau installée après 2017 »…) est un libellé libre : le filtre pompe à chaleur utilise une recherche par préfixe, `qs=type_generateur_chauffage_principal:PAC*` ;
+- l'année de construction manque pour environ 40 % des DPE de maisons, la période (`periode_construction`) est toujours renseignée : le filtre utilise donc les périodes.
 
 ### API Géo
 
@@ -111,7 +138,7 @@ Filtres utilisés : `{champ}_eq`, `_in`, `_gte`, `_lte`, `geo_distance=lon,lat,1
 
 ### DVF
 
-`GET https://app.dvf.etalab.gouv.fr/api/mutations3/{codeInsee}/{prefixe}{section}` : toutes les ventes d'une section cadastrale (quelques centaines de Ko). Les valeurs arrivent en chaînes, avec `"nan"` et `"None"` pour les vides. Une vente occupe plusieurs lignes (une par local et par parcelle) qui répètent le prix total : `grouper()` les rassemble.
+`GET https://app.dvf.etalab.gouv.fr/api/mutations3/{codeInsee}/{prefixe}{section}` : toutes les ventes d'une section cadastrale (quelques centaines de Ko). Les valeurs arrivent en chaînes, avec `"nan"` et `"None"` pour les vides. Une vente occupe plusieurs lignes (une par local et par parcelle) qui répètent le prix total : `grouperVentes()` les rassemble (testée dans `__tests__/dvf.test.ts`).
 
 Les fichiers bruts `files.data.gouv.fr/geo-dvf/…` ne sont **pas** utilisables depuis un navigateur : ils redirigent vers un stockage sans en-têtes CORS.
 
@@ -148,13 +175,19 @@ Pour ajouter une règle : écrire la condition dans `analyser()` (ou `analyserTe
 
 ## Tests
 
-`npm test` (Vitest) couvre les fonctions pures : lecture d'annonce, lien partageable, règles de vérification. Les données de test sont **fictives** : n'y mettez jamais les chiffres d'un logement réel, qu'on pourrait retrouver avec l'application.
+`npm test` (Vitest) couvre les fonctions pures : lecture d'annonce, lien partageable, règles de vérification, accès réseau (cache, délais, erreurs, avec `happy-dom`), regroupement des ventes DVF. Les données de test sont **fictives** : n'y mettez jamais les chiffres d'un logement réel, qu'on pourrait retrouver avec l'application.
 
 ## Publication
 
-- `.github/workflows/ci.yml` : tests, types et build sur chaque pull request.
+- `.github/workflows/ci.yml` : ESLint, Prettier, tests, types et build sur chaque pull request.
 - `.github/workflows/deploy.yml` : tests puis build à chaque push sur `main`, publication sur GitHub Pages.
 - `.github/dependabot.yml` : mises à jour mensuelles et groupées des dépendances et des actions. `vite.config.ts` utilise `base: './'` : le même build fonctionne à la racine d'un domaine comme dans un sous-dossier (`/sherlock-immo/`). Le workflow injecte `VITE_REPO_URL`, affichée sur la page Sources et outils.
+
+## Accessibilité
+
+- Tout est utilisable au clavier : tri des colonnes, ouverture d'une fiche depuis le tableau, Échap pour la fermer, saisie des communes au modèle *combobox*.
+- La carte n'est pas indispensable : le tableau donne les mêmes logements.
+- Audit avec axe-core (voir CONTRIBUTING) : aucun défaut sur l'accueil, les résultats, la fiche (thèmes clair et sombre), les favoris et la page Sources.
 
 ## Pistes
 

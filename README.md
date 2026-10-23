@@ -40,8 +40,9 @@ Or ces chiffres sont publics. Depuis 2021, chaque DPE est enregistré par l'ADEM
 
 - **Collez le texte de l'annonce** : ville, surface, étiquettes, consommation, émissions, dépenses d'énergie, prix et terrain sont repérés et remplissent les critères. L'analyse se fait dans votre navigateur.
 - Par **commune** (plusieurs possibles, avec les communes voisines à cocher), **étiquettes DPE et GES**, **surface habitable** (valeur ± tolérance) et **date du DPE**.
+- Par **construction et équipements** : période de construction, énergie de chauffage, pompe à chaleur, plain-pied, panneaux photovoltaïques, bon confort d'été.
 - Par les **chiffres exacts de l'annonce** : consommation (kWh/m²/an), émissions (kg CO₂/m²/an) et dépenses annuelles d'énergie. Ce sont les critères les plus efficaces : deux chiffres suffisent souvent pour tomber sur une seule maison.
-- Résultats sur une carte (plan ou photo aérienne IGN) et dans un tableau, avec export CSV.
+- Résultats sur une carte (plan ou photo aérienne IGN, points regroupés) et dans un tableau, avec export CSV.
 - **Partagez une recherche par lien** : les critères sont dans l'adresse de la page.
 
 <p align="center">
@@ -57,6 +58,12 @@ Or ces chiffres sont publics. Depuis 2021, chaque DPE est enregistré par l'ADEM
 - **Travaux** : qualité d'isolation paroi par paroi, répartition des pertes de chaleur, chauffage, ventilation, et l'**audit énergétique** chiffré quand il existe.
 - **Risques** (inondation, argiles, radon, sols pollués…) et **urbanisme** (zone du PLU, zones constructibles à proximité).
 - Liens vers la vue de rue, la photo aérienne et les photos aériennes anciennes (pour repérer une extension).
+- **Questions à poser lors de la visite**, générées à partir des points d'attention, et **dossier imprimable** (ou en PDF) de la fiche.
+
+**Comparer**
+
+- **Favoris** avec notes et prix de l'annonce, gardés dans votre navigateur.
+- **Comparateur** de 2 ou 3 logements côte à côte : énergie, facture, surface, chauffage, isolation, prix au m².
 
 <p align="center">
   <img src="docs/images/fiche.jpg" alt="Fiche de vérification d'un logement" width="380" />
@@ -96,6 +103,7 @@ Sherlock Immo n'est affilié à aucun de ces organismes.
 - L'adresse du DPE est celle saisie par le diagnostiqueur, puis géocodée : elle peut être approximative.
 - Les ventes (DVF) couvrent les cinq dernières années et ne comptent ni les ventes en Alsace-Moselle ni celles à Mayotte.
 - Les estimations (facture d'énergie, coût des travaux) sont celles des diagnostics, pas des devis.
+- L'API de l'ADEME limite le temps de calcul par utilisateur : après beaucoup de recherches d'affilée, il faut parfois patienter une minute (l'application l'indique).
 - Ce n'est pas un conseil juridique ni financier. Vérifiez auprès des professionnels concernés (notaire, diagnostiqueur) avant toute décision.
 
 ## Développement
@@ -105,7 +113,9 @@ Prérequis : Node.js 20.19 ou plus récent (22.12 ou plus pour la branche 22).
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # tests (lecture d'annonce, lien partageable, règles de vérification)
+npm test           # tests unitaires (Vitest)
+npm run lint       # ESLint
+npm run format     # Prettier
 npm run build      # vérification des types + build statique dans dist/
 ```
 

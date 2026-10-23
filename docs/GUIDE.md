@@ -34,12 +34,13 @@ Commencez large, puis resserrez :
 1. Ville + chiffres énergie et climat. Souvent, ça suffit.
 2. S'il reste plusieurs résultats : ajoutez la **surface**. En mode « Valeur ± tolérance », la jauge à 0 % cherche la valeur exacte (100 m² trouve aussi 100,3 m²). Laissez quelques pourcents de marge, les annonces arrondissent.
 3. Puis la **date du DPE** (« Du » seul = après cette date, « Au » seul = avant, les deux = entre).
+4. Le bloc **Construction et équipements** (replié par défaut) affine encore : période de construction, énergie de chauffage, pompe à chaleur, plain-pied, panneaux photovoltaïques, bon confort d'été. Une case non cochée ne filtre rien.
 
 Par défaut, la recherche inclut les logements neufs et ne montre qu'**un seul DPE par adresse** (le plus récent).
 
 ## 4. Lire les résultats
 
-- Chaque point sur la carte a la couleur de son étiquette énergie. Le fond **Photo aérienne** (bouton en haut à droite de la carte) aide à reconnaître la maison des photos de l'annonce.
+- Chaque point sur la carte a la couleur de son étiquette énergie. Quand ils sont nombreux, les points proches sont regroupés dans une pastille qui indique leur nombre : zoomez ou cliquez dessus pour les séparer. Le fond **Photo aérienne** (bouton en haut à droite de la carte) aide à reconnaître la maison des photos de l'annonce.
 - Le tableau se trie par colonne. **Exporter CSV** récupère la liste.
 - **← Nouvelle recherche** revient au formulaire en gardant vos critères.
 - **Partager** copie un lien vers cette recherche (sur téléphone, ouvre le menu de partage). La personne qui l'ouvre retombe sur les mêmes résultats. Le lien contient les critères, pas d'adresse.
@@ -63,6 +64,10 @@ Ils sont classés du plus grave au plus rassurant :
 
 Un signal n'est pas une preuve. Il vous donne la question à poser : « Quels travaux expliquent le passage de F à E ? », « Pourquoi 140 m² au DPE et 90 m² aux impôts ? ».
 
+### Questions de visite et dossier
+
+La section **Questions à poser lors de la visite** reprend les points d'attention sous forme de questions, plus quelques incontournables. **Imprimer le dossier** (en tête de fiche) produit une version papier ou PDF de la fiche, avec ces questions : de quoi l'emporter à la visite.
+
 ### Le reste de la fiche
 
 - **Par où part la chaleur** : les postes de travaux les plus rentables.
@@ -74,7 +79,13 @@ Un signal n'est pas une preuve. Il vous donne la question à poser : « Quels tr
 - **Historique de l'adresse** : tous les DPE, y compris ceux d'avant 2021.
 - **Voir sur place** : vue de rue, photo aérienne, comparaison avec les photos des années 1950-1965.
 
-## 6. Installer sur téléphone
+## 6. Mettre de côté et comparer
+
+- **☆** (dans le tableau ou en tête de fiche) ajoute le logement à **Mes favoris**.
+- Sur la page **Mes favoris** (lien en haut de page), notez le prix de l'annonce et vos impressions, rouvrez la fiche, ou cochez 2 ou 3 logements puis **Comparer la sélection** : un tableau côte à côte met en vert la meilleure valeur de chaque ligne.
+- Favoris et notes restent dans ce navigateur : ils ne sont envoyés nulle part, et ne passent pas d'un appareil à l'autre.
+
+## 7. Installer sur téléphone
 
 1. Ouvrez l'application dans Safari (iPhone) ou Chrome (Android).
 2. *Partager → Sur l'écran d'accueil* (iPhone) ou *menu ⋮ → Installer l'application* (Android).
@@ -87,4 +98,6 @@ L'icône ouvre Sherlock Immo en plein écran. Une connexion internet reste néce
 
 **Plusieurs résultats à la même adresse ?** Ce sont plusieurs DPE du même immeuble, ou des DPE refaits. Décochez « Un seul DPE par adresse » pour tout voir.
 
-**Mes recherches sont-elles enregistrées quelque part ?** Seulement dans votre navigateur (vos derniers critères et le thème). Les requêtes partent directement vers les services publics, sans passer par un serveur Sherlock Immo.
+**« Trop de demandes d'un coup, réessayez… »** L'API de l'ADEME limite le temps de calcul par utilisateur. Patientez une minute : les fiches déjà ouvertes restent en mémoire.
+
+**Mes recherches sont-elles enregistrées quelque part ?** Seulement dans votre navigateur (derniers critères, favoris, notes, thème). Les requêtes partent directement vers les services publics, sans passer par un serveur Sherlock Immo.
