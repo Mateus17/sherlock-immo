@@ -137,7 +137,7 @@ watch(
 </script>
 
 <template>
-  <div ref="el" class="map"></div>
+  <div ref="el" class="map" role="region" aria-label="Carte des résultats (la liste ci-dessous donne les mêmes logements au clavier)"></div>
 </template>
 
 <style scoped>

@@ -59,7 +59,7 @@ onMounted(async () => {
 <template>
   <ThemeToggle />
   <SourcesPage v-if="page === 'sources'" :updated-at="updatedAt" />
-  <div v-else class="layout" :class="{ landing: !hasResults }">
+  <main v-else class="layout" :class="{ landing: !hasResults }">
     <aside class="filters" aria-label="Critères de recherche">
       <header>
         <div class="brand">
@@ -86,7 +86,7 @@ onMounted(async () => {
       </footer>
     </aside>
 
-    <main v-if="hasResults" class="results">
+    <section v-if="hasResults" class="results" aria-label="Résultats">
       <ResultsBar @nouvelle="nouvelleRecherche" />
 
       <div class="body" :class="{ 'with-detail': detailDpe }">
@@ -114,8 +114,8 @@ onMounted(async () => {
           @parcelle="parcelleGeom = $event"
         />
       </div>
-    </main>
-  </div>
+    </section>
+  </main>
 </template>
 
 <style scoped>

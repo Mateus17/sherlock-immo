@@ -86,6 +86,12 @@ function onKeydown(e: KeyboardEvent) {
       <input
         v-model="query"
         type="text"
+        role="combobox"
+        aria-label="Commune"
+        aria-autocomplete="list"
+        aria-controls="liste-communes"
+        :aria-expanded="open"
+        :aria-activedescendant="open && suggestions[highlighted] ? `commune-${suggestions[highlighted].code}` : undefined"
         placeholder="Ville, ville + n° dépt, code postal…"
         autocomplete="off"
         @keydown="onKeydown"
@@ -93,10 +99,13 @@ function onKeydown(e: KeyboardEvent) {
         @blur="(focused = false), (open = false)"
       />
     </div>
-    <ul v-if="open" class="suggestions">
+    <ul v-if="open" id="liste-communes" class="suggestions" role="listbox" aria-label="Communes proposées">
       <li
         v-for="(c, i) in suggestions"
+        :id="`commune-${c.code}`"
         :key="c.code"
+        role="option"
+        :aria-selected="i === highlighted"
         :class="{ active: i === highlighted }"
         @mousedown.prevent="add(c)"
         @mouseenter="highlighted = i"
@@ -104,10 +113,10 @@ function onKeydown(e: KeyboardEvent) {
         <strong>{{ c.nom }}</strong>
         <span>{{ c.codesPostaux.slice(0, 3).join(', ') }} · {{ c.departement }}</span>
       </li>
-      <li v-if="!suggestions.length" class="hint muted" @mousedown.prevent>
+      <li v-if="!suggestions.length" class="hint muted" role="presentation" @mousedown.prevent>
         Aucune commune trouvée{{ parseCommuneQuery(query).dep ? ` dans le département « ${parseCommuneQuery(query).dep} »` : '' }}
       </li>
-      <li v-if="hint" class="hint muted" @mousedown.prevent>{{ hint }}</li>
+      <li v-if="hint" class="hint muted" role="presentation" @mousedown.prevent>{{ hint }}</li>
     </ul>
   </div>
 </template>

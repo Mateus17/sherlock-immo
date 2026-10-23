@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { observatoireUrl, type Dpe } from '../api/dpe'
+import { useFavoris } from '../composables/useFavoris'
 import { copier } from '../lib/presse-papiers'
 import DpeBadge from './DpeBadge.vue'
 
@@ -43,6 +44,8 @@ function formatDate(s?: string) {
   return s ? new Date(s).toLocaleDateString('fr-FR') : '–'
 }
 
+const { estFavori, basculer } = useFavoris()
+
 function copy(text?: string) {
   if (text) copier(text)
 }
@@ -53,12 +56,19 @@ function copy(text?: string) {
     <table>
       <thead>
         <tr>
-          <th v-for="c in columns" :key="c.key" :class="{ sorted: sortKey === c.key }" @click="sortBy(c.key)">
-            {{ c.label }}
-            <span v-if="sortKey === c.key">{{ sortDir === 1 ? '▲' : '▼' }}</span>
+          <th
+            v-for="c in columns"
+            :key="c.key"
+            :class="{ sorted: sortKey === c.key }"
+            :aria-sort="sortKey === c.key ? (sortDir === 1 ? 'ascending' : 'descending') : 'none'"
+          >
+            <button type="button" class="sort" @click="sortBy(c.key)">
+              {{ c.label }}
+              <span v-if="sortKey === c.key" aria-hidden="true">{{ sortDir === 1 ? '▲' : '▼' }}</span>
+            </button>
           </th>
           <th>GES</th>
-          <th></th>
+          <th><span class="sr-only">Actions</span></th>
         </tr>
       </thead>
       <tbody>
@@ -69,7 +79,9 @@ function copy(text?: string) {
           @click="emit('select', d.numero_dpe)"
         >
           <td class="addr">
-            <span>{{ d.adresse_ban ?? 'Adresse inconnue' }}</span>
+            <button type="button" class="open" :aria-current="d.numero_dpe === selectedId" @click.stop="emit('select', d.numero_dpe)">
+              {{ d.adresse_ban ?? 'Adresse inconnue' }}
+            </button>
             <small v-if="d.complement_adresse_logement || d.type_batiment">
               {{ d.type_batiment }}
               <template v-if="d.complement_adresse_logement"> · {{ d.complement_adresse_logement }}</template>
@@ -82,8 +94,24 @@ function copy(text?: string) {
           <td class="num">{{ formatDate(d.date_etablissement_dpe) }}</td>
           <td><DpeBadge :value="d.etiquette_ges" /></td>
           <td class="actions" @click.stop>
-            <button type="button" title="Copier l'adresse" @click="copy(d.adresse_ban)">⧉</button>
-            <a :href="observatoireUrl(d.numero_dpe)" target="_blank" rel="noopener" title="Voir le DPE">↗</a>
+            <button
+              type="button"
+              class="star"
+              :aria-pressed="estFavori(d.numero_dpe)"
+              :title="estFavori(d.numero_dpe) ? 'Retirer des favoris' : 'Ajouter aux favoris'"
+              :aria-label="`${estFavori(d.numero_dpe) ? 'Retirer des favoris' : 'Ajouter aux favoris'} : ${d.adresse_ban ?? 'logement'}`"
+              @click="basculer(d)"
+            >
+              {{ estFavori(d.numero_dpe) ? '★' : '☆' }}
+            </button>
+            <button type="button" title="Copier l'adresse" :aria-label="`Copier l'adresse ${d.adresse_ban ?? ''}`" @click="copy(d.adresse_ban)">⧉</button>
+            <a
+              :href="observatoireUrl(d.numero_dpe)"
+              target="_blank"
+              rel="noopener"
+              title="Voir le DPE officiel"
+              :aria-label="`Voir le DPE officiel de ${d.adresse_ban ?? 'ce logement'} (nouvel onglet)`"
+            >↗</a>
           </td>
         </tr>
       </tbody>
@@ -92,6 +120,31 @@ function copy(text?: string) {
 </template>
 
 <style scoped>
+.sort {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.open {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.open:hover {
+  color: var(--accent);
+}
+.star[aria-pressed='true'] {
+  color: var(--accent-2);
+}
 .table-wrap {
   overflow: auto;
   border: 1px solid var(--border);
