@@ -5,6 +5,10 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      # vue-tsc ne fonctionne pas encore avec TypeScript 7 (réécriture native) : on reste en 6.x
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
     groups:
       dependances:
         patterns: ['*']
