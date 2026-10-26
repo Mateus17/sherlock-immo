@@ -4,7 +4,7 @@
 
 import { getJson } from '../lib/http'
 import * as miroir from '../lib/miroir'
-import type { Commune } from './geo'
+import { codesInsee, type Commune } from './geo'
 
 const API = 'https://data.ademe.fr/data-fair/api/v1/datasets'
 const DATASET_URL = `${API}/dpe03existant`
@@ -242,7 +242,7 @@ async function searchApi(filters: DpeFilters, signal?: AbortSignal): Promise<Sea
       }
     } else {
       const p = new URLSearchParams(base)
-      p.set('code_insee_ban_in', filters.communes.map((c) => c.code).join(','))
+      p.set('code_insee_ban_in', filters.communes.flatMap((c) => codesInsee(c.code)).join(','))
       requests.push({
         label: filters.communes.map((c) => c.nom).join(', ') + suffix,
         source,

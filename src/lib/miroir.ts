@@ -5,7 +5,7 @@
 // interroge l'API comme avant.
 
 import type { Dpe, DpeFilters } from '../api/dpe'
-import { distanceKm, nearbyCommunes, type Commune } from '../api/geo'
+import { codesInsee, distanceKm, nearbyCommunes, type Commune } from '../api/geo'
 import {
   VERSION_FORMAT,
   banDe,
@@ -69,11 +69,12 @@ export async function rechercher(filters: DpeFilters, signal?: AbortSignal): Pro
   // Communes à lire : celles choisies, plus, avec un rayon, toutes celles dont le centre est
   // à moins de rayon + 3 km (un logement peut être dans le rayon sans que le centre de sa commune y soit)
   const centres: Commune[] = filters.communes
-  const codes = new Set(centres.map((c) => c.code))
+  const choisies = [...centres]
   if (filters.rayonKm) {
     const autour = await Promise.all(centres.map((c) => nearbyCommunes(c, filters.rayonKm! + 3)))
-    autour.flat().forEach((c) => codes.add(c.code))
+    choisies.push(...autour.flat())
   }
+  const codes = new Set(choisies.flatMap((c) => codesInsee(c.code)))
   if (signal?.aborted) throw new DOMException('Abandon', 'AbortError')
 
   const lus = await Promise.all([...codes].map(commune))

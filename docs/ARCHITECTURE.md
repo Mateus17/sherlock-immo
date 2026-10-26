@@ -97,7 +97,7 @@ L'API de l'ADEME limite le temps de calcul par utilisateur. Pour que la recherch
 **Construction** (`scripts/donnees/construire.ts`, lancé par `.github/workflows/donnees.yml` le dimanche à 3 h 17 UTC) :
 
 1. Pour chaque département, télécharge les maisons page par page (10 000 lignes, `count=false`), en attendant quand l'API répond 429. Environ 2 h pour la France.
-2. Encode chaque DPE en ligne compacte (`src/lib/miroir-format.ts`) : textes répétitifs remplacés par des numéros, adresse sans « code postal + commune ». Environ **42 octets par maison compressée, ~215 Mo pour la France**, sous la limite de 1 Go de GitHub Pages.
+2. Encode chaque DPE en ligne compacte (`src/lib/miroir-format.ts`) : textes répétitifs remplacés par des numéros, adresse sans « code postal + commune ». Environ **42 octets par maison compressée, ~210 Mo pour la France**, sous la limite de 1 Go de GitHub Pages.
 3. Écrit un fichier par commune, `donnees/maisons/{département}/{insee}.json.gz`, et `donnees/index.json` (dictionnaires, dates, volumes).
 4. Range l'archive `donnees.tar` dans la release **« donnees »** (pas dans git : le dépôt ne grossit pas), commite `donnees-version.json` (garde les tâches planifiées actives, GitHub les coupant après 60 jours sans activité) puis appelle `deploy.yml`.
 

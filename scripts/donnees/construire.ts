@@ -3,7 +3,7 @@
 // (.github/workflows/donnees.yml), ou à la main pour développer :
 //
 //   npm run donnees -- --departements 35            → public/donnees (servi par `npm run dev`)
-//   npm run donnees -- --sortie donnees             → toute la France (≈ 2 h)
+//   npm run donnees -- --sortie donnees             → toute la France (1 à 2 h)
 //
 // L'API de l'ADEME limite le temps de calcul par utilisateur : le script avance page par page
 // (10 000 lignes), sans compter le total, et attend quand l'API le demande (erreur 429).

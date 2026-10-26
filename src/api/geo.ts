@@ -11,6 +11,20 @@ export interface Commune {
   lat: number
 }
 
+// Paris, Lyon et Marseille : la BAN, donc les DPE, utilisent les codes des arrondissements
+// (75101…75120, 69381…69389, 13201…13216), pas celui de la commune
+const ARRONDISSEMENTS: Record<string, [premier: number, nombre: number]> = {
+  '75056': [75101, 20],
+  '69123': [69381, 9],
+  '13055': [13201, 16],
+}
+
+// Codes INSEE à chercher dans les DPE pour une commune
+export function codesInsee(code: string): string[] {
+  const a = ARRONDISSEMENTS[code]
+  return a ? [code, ...Array.from({ length: a[1] }, (_, i) => String(a[0] + i))] : [code]
+}
+
 interface GeoApiCommune {
   nom: string
   code: string
