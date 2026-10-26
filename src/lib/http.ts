@@ -39,23 +39,49 @@ function ecrireSession(cle: string, v: unknown) {
   }
 }
 
+// Quota dépassé (erreur 429) : on attend puis on réessaie, deux fois au plus.
+// L'en-tête Retry-After n'est pas toujours lisible depuis le navigateur : délais par défaut.
+export const ATTENTES_QUOTA_S = [20, 40]
+export const EVENEMENT_ATTENTE = 'sherlock:attente'
+export interface DetailAttente {
+  service: string
+  secondes: number
+}
+
+const pause = (s: number) => new Promise((r) => setTimeout(r, s * 1000))
+
 async function telecharger<T>(url: string, service: string): Promise<T> {
-  let res: Response
-  try {
-    res = await fetch(url, { signal: AbortSignal.timeout(DELAI_MS) })
-  } catch (e) {
-    const err = e as Error
-    if (err.name === 'TimeoutError') throw new ErreurReseau(`${service} ne répond pas (délai dépassé)`, service)
-    throw new ErreurReseau(`${service} injoignable (connexion ?)`, service)
+  let reseauReessaye = false
+  for (let essai = 0; ; essai++) {
+    let res: Response
+    try {
+      res = await fetch(url, { signal: AbortSignal.timeout(DELAI_MS) })
+    } catch (e) {
+      const err = e as Error
+      if (err.name === 'TimeoutError') throw new ErreurReseau(`${service} ne répond pas (délai dépassé)`, service)
+      // Raté réseau ponctuel (fréquent sur mobile ou quand un service se réveille) : un nouvel essai
+      if (!reseauReessaye) {
+        reseauReessaye = true
+        await pause(1.5)
+        essai--
+        continue
+      }
+      throw new ErreurReseau(`${service} injoignable (connexion ?)`, service)
+    }
+    if (res.status === 429) {
+      // Budget de calcul dépassé (l'ADEME limite le temps de traitement cumulé par utilisateur)
+      if (essai < ATTENTES_QUOTA_S.length) {
+        const indique = Number(res.headers.get('retry-after'))
+        const secondes = Number.isFinite(indique) && indique > 0 ? Math.min(indique, 60) : ATTENTES_QUOTA_S[essai]
+        globalThis.dispatchEvent?.(new CustomEvent<DetailAttente>(EVENEMENT_ATTENTE, { detail: { service, secondes } }))
+        await pause(secondes)
+        continue
+      }
+      throw new ErreurReseau(`${service} : trop de demandes d'un coup, réessayez dans une minute`, service)
+    }
+    if (!res.ok) throw new ErreurReseau(`${service} : erreur ${res.status}`, service)
+    return res.json() as Promise<T>
   }
-  if (res.status === 429) {
-    // Budget de calcul dépassé (l'ADEME limite le temps de traitement cumulé par utilisateur)
-    const attente = Number(res.headers.get('retry-after'))
-    const delai = Number.isFinite(attente) && attente > 0 ? `dans ${Math.ceil(attente)} s` : 'dans une minute'
-    throw new ErreurReseau(`${service} : trop de demandes d'un coup, réessayez ${delai}`, service)
-  }
-  if (!res.ok) throw new ErreurReseau(`${service} : erreur ${res.status}`, service)
-  return res.json() as Promise<T>
 }
 
 // Rejette dès que l'appelant abandonne, sans interrompre le téléchargement partagé

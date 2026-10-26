@@ -90,11 +90,31 @@ Les composables tiennent un **état unique au niveau du module** (`useCriteres`,
 
 Tout est ensuite passé à `analyser()` (`src/lib/verification.ts`), qui renvoie une liste de `Point { niveau, titre, detail, question }` triée par gravité. Les `question` alimentent la section « Questions à poser lors de la visite » du dossier imprimable. Ce sont des **fonctions pures**, sans appel réseau : faciles à lire, à tester et à enrichir.
 
+## Données hébergées (maisons, sans quota)
+
+L'API de l'ADEME limite le temps de calcul par utilisateur. Pour que la recherche de **maisons** n'en dépende pas, le site embarque sa propre copie des DPE de maisons (existantes et neuves), reconstruite chaque semaine.
+
+**Construction** (`scripts/donnees/construire.ts`, lancé par `.github/workflows/donnees.yml` le dimanche à 3 h 17 UTC) :
+
+1. Pour chaque département, télécharge les maisons page par page (10 000 lignes, `count=false`), en attendant quand l'API répond 429. Environ 2 h pour la France.
+2. Encode chaque DPE en ligne compacte (`src/lib/miroir-format.ts`) : textes répétitifs remplacés par des numéros, adresse sans « code postal + commune ». Environ **42 octets par maison compressée, ~215 Mo pour la France**, sous la limite de 1 Go de GitHub Pages.
+3. Écrit un fichier par commune, `donnees/maisons/{département}/{insee}.json.gz`, et `donnees/index.json` (dictionnaires, dates, volumes).
+4. Range l'archive `donnees.tar` dans la release **« donnees »** (pas dans git : le dépôt ne grossit pas), commite `donnees-version.json` (garde les tâches planifiées actives, GitHub les coupant après 60 jours sans activité) puis appelle `deploy.yml`.
+
+**Déploiement** (`deploy.yml`) : après le build, télécharge l'archive de la release et l'extrait dans `dist/`. Sans archive (fork tout neuf), le site fonctionne via l'API.
+
+**Lecture** (`src/lib/miroir.ts`) : `disponible()` lit `donnees/index.json`. Si présent, `searchDpe()` sert les maisons depuis les fichiers de commune (filtres appliqués dans le navigateur par `filtrerLignes()`, mêmes règles que l'API) et l'historique d'adresse d'une maison aussi. Les appartements, le détail d'une fiche, les audits et les DPE d'avant 2021 restent sur l'API (3 petites requêtes par fiche, en cache). Recherche par rayon : fichiers des communes dont le centre est à moins de rayon + 3 km, puis tri des logements à la distance exacte. Un `.gz` est décompressé dans le navigateur (`DecompressionStream`) sauf si le serveur l'a déjà fait (signature `1f 8b`).
+
+Vérifications faites : mêmes résultats que l'API (81 sur 81 pour une recherche à Rennes ; 2 058 sur 2 059 dans un rayon de 10 km, l'écart étant un logement à la limite).
+
+Pour développer : `npm run donnees -- --departements 35` construit un département dans `public/donnees/` (ignoré par git), servi par `npm run dev`.
+
 ## Accès réseau
 
 Tous les appels passent par `getJson()` (`src/lib/http.ts`) :
 
 - **délai maximal** de 20 s, puis message « … ne répond pas » ;
+- **nouvel essai** après un raté réseau ponctuel, et après un quota dépassé (429) : attente de 20 puis 40 s, annoncée par un bandeau (`AttenteQuota.vue`, événement `sherlock:attente`) ;
 - **erreurs nommées** par service, affichées dans la fiche sans bloquer les autres sections ;
 - **cache** en mémoire et en `sessionStorage` (1 h, réponses de moins de 150 000 caractères) : rouvrir une fiche ne relance aucun appel. Un échec n'est jamais mis en cache ;
 - un abandon côté appelant (nouvelle recherche, fiche fermée) ne coupe pas un téléchargement partagé par une autre partie de l'app.

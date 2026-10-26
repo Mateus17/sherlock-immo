@@ -2,6 +2,18 @@
 
 Les évolutions notables de Sherlock Immo. Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versions selon [SemVer](https://semver.org/lang/fr/).
 
+## [1.2.0] — 2026-10-26
+
+### Ajouté
+
+- **Données hébergées** : les DPE de maisons (existantes et neuves) sont copiés chaque semaine avec le site, un fichier compressé par commune (~215 Mo pour la France). La recherche de maisons et l'historique d'adresse ne passent plus par l'API de l'ADEME : plus de quota, et une recherche plus rapide.
+- Workflow hebdomadaire « Données hébergées » (dimanche) et script `npm run donnees`.
+- Nouvel essai automatique en cas de quota (429) ou de raté réseau, annoncé par un bandeau.
+
+### Modifié
+
+- Appartements, détail d'une fiche, audits et DPE d'avant 2021 restent servis par l'API de l'ADEME.
+
 ## [1.1.0] — 2026-10-24
 
 ### Ajouté
@@ -56,5 +68,6 @@ Première version publique.
 - Installable (PWA) sur ordinateur, Android et iOS, thème clair et sombre.
 - Page « Sources et outils ».
 
+[1.2.0]: https://github.com/Mateus17/sherlock-immo/releases/tag/v1.2.0
 [1.1.0]: https://github.com/Mateus17/sherlock-immo/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Mateus17/sherlock-immo/releases/tag/v1.0.0

@@ -91,7 +91,7 @@ export function useFiche(dpe: Ref<Dpe>, onParcelle: (geom: Parcelle['geometry'] 
     const ban = d.identifiant_ban
     const [det, h, o, a] = await Promise.allSettled([
       getDpeDetail(d.numero_dpe, d._source, signal),
-      ban ? getAddressHistory(ban, signal) : Promise.resolve([]),
+      ban ? getAddressHistory(ban, signal, d.type_batiment) : Promise.resolve([]),
       getOldDpes(d, signal),
       ban ? getAudits(ban, signal) : Promise.resolve([]),
     ])

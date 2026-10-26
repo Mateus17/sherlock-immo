@@ -125,6 +125,10 @@ const logiciels = [
           Base des DPE mise à jour le {{ new Date(updatedAt).toLocaleDateString('fr-FR') }}.</template
         >
       </p>
+      <p class="small">
+        Les DPE de maisons sont <strong>copiés chaque semaine</strong> avec le site, un fichier par commune : la
+        recherche de maisons ne dépend pas des limites de l'API de l'ADEME.
+      </p>
       <ul class="cards">
         <li v-for="d in donnees" :key="d.nom">
           <a :href="d.url" target="_blank" rel="noopener">{{ d.nom }} ↗</a>

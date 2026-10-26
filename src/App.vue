@@ -2,6 +2,7 @@
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
 import { getDatasetUpdatedAt } from './api/dpe'
 import AnnoncePaste from './components/AnnoncePaste.vue'
+import AttenteQuota from './components/AttenteQuota.vue'
 import SearchForm from './components/filtres/SearchForm.vue'
 import InstallButton from './components/InstallButton.vue'
 import ResultsBar from './components/ResultsBar.vue'
@@ -12,6 +13,7 @@ import { useCriteres } from './composables/useCriteres'
 import { useFavoris } from './composables/useFavoris'
 import { useLienPartage } from './composables/useLienPartage'
 import { useRecherche } from './composables/useRecherche'
+import { disponible as miroirDisponible } from './lib/miroir'
 import './styles/formulaire.css'
 
 // Chargés à la demande : Leaflet, la fiche et la page Sources ne pèsent pas sur l'accueil
@@ -28,6 +30,8 @@ const lien = useLienPartage()
 const { liste: favoris } = useFavoris()
 
 const updatedAt = ref<string | null>(null)
+// Maisons servies par les données hébergées (sans quota) : date de leur construction
+const miroirDu = ref<string | null>(null)
 
 async function search() {
   if (!form.communes.length) return
@@ -57,12 +61,17 @@ const onHash = () => {
 onMounted(async () => {
   window.addEventListener('hashchange', onHash)
   if (await lien.ouvrir()) search()
-  updatedAt.value = await getDatasetUpdatedAt()
+  const idx = await miroirDisponible()
+  if (idx) {
+    miroirDu.value = idx.genere_le
+    updatedAt.value = idx.maj_ademe
+  } else updatedAt.value = await getDatasetUpdatedAt()
 })
 </script>
 
 <template>
   <ThemeToggle />
+  <AttenteQuota />
   <SourcesPage v-if="page === 'sources'" :updated-at="updatedAt" />
   <FavorisPage v-else-if="page === 'favoris'" />
   <main v-else class="layout" :class="{ landing: !hasResults }">
@@ -92,7 +101,8 @@ onMounted(async () => {
       <footer class="muted">
         <a href="#sources">Sources et outils</a>
         · Données publiques
-        <template v-if="updatedAt">(DPE à jour au {{ new Date(updatedAt).toLocaleDateString('fr-FR') }})</template>
+        <template v-if="miroirDu">(maisons : données du {{ new Date(miroirDu).toLocaleDateString('fr-FR') }})</template>
+        <template v-else-if="updatedAt">(DPE à jour au {{ new Date(updatedAt).toLocaleDateString('fr-FR') }})</template>
         · Open source
       </footer>
     </aside>

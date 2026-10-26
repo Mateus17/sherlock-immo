@@ -1,10 +1,12 @@
-# Construit le site et le publie sur GitHub Pages à chaque push sur main
+# Construit le site et le publie sur GitHub Pages : à chaque push sur main, et après chaque
+# construction des données hébergées (donnees.yml l'appelle).
 name: Déploiement GitHub Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -31,6 +33,18 @@ jobs:
         env:
           # Lien « code source » affiché sur la page Sources et outils
           VITE_REPO_URL: https://github.com/${{ github.repository }}
+      # Données hébergées (maisons) : dernière archive construite par donnees.yml.
+      # Absente (fork tout neuf) : le site fonctionne quand même, via l'API de l'ADEME.
+      - name: Ajouter les données hébergées
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release download donnees --repo "${{ github.repository }}" --pattern donnees.tar --dir /tmp; then
+            tar -xf /tmp/donnees.tar -C dist
+            du -sh dist/donnees
+          else
+            echo "Pas encore de données hébergées : le site utilisera l'API de l'ADEME."
+          fi
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

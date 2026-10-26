@@ -84,7 +84,9 @@ Le [guide d'utilisation](docs/GUIDE.md) détaille comment passer d'une annonce �
 
 ## Données utilisées
 
-Tout est interrogé directement depuis votre navigateur. Il n'y a ni serveur, ni compte, ni clé d'API, et rien de ce que vous cherchez n'est enregistré ailleurs que dans votre navigateur.
+Il n'y a ni serveur, ni compte, ni clé d'API, et rien de ce que vous cherchez n'est enregistré ailleurs que dans votre navigateur.
+
+Les **DPE de maisons** sont copiés chaque semaine avec le site (un fichier par commune) : la recherche de maisons ne dépend d'aucun quota. Le reste (appartements, détail d'une fiche, ventes, risques…) est interrogé directement depuis votre navigateur auprès des services publics.
 
 | Données | Producteur | Licence |
 |---|---|---|
@@ -103,7 +105,8 @@ Sherlock Immo n'est affilié à aucun de ces organismes.
 - L'adresse du DPE est celle saisie par le diagnostiqueur, puis géocodée : elle peut être approximative.
 - Les ventes (DVF) couvrent les cinq dernières années et ne comptent ni les ventes en Alsace-Moselle ni celles à Mayotte.
 - Les estimations (facture d'énergie, coût des travaux) sont celles des diagnostics, pas des devis.
-- L'API de l'ADEME limite le temps de calcul par utilisateur : après beaucoup de recherches d'affilée, il faut parfois patienter une minute (l'application l'indique).
+- Les maisons sont à jour **à la semaine** (copie du dimanche) ; les appartements, en direct.
+- L'API de l'ADEME limite le temps de calcul par utilisateur. Les maisons n'en dépendent plus ; pour le reste, l'application attend et réessaie toute seule si besoin.
 - Ce n'est pas un conseil juridique ni financier. Vérifiez auprès des professionnels concernés (notaire, diagnostiqueur) avant toute décision.
 
 ## Développement
@@ -117,6 +120,7 @@ npm test           # tests unitaires (Vitest)
 npm run lint       # ESLint
 npm run format     # Prettier
 npm run build      # vérification des types + build statique dans dist/
+npm run donnees -- --departements 35   # données hébergées d'un département, pour le développement
 ```
 
 L'organisation du code, les API et les règles de vérification sont décrites dans [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -126,6 +130,8 @@ L'organisation du code, les API et les règles de vérification sont décrites d
 Le logo est un SVG unique, `public/icons/icon.svg`. `npm run icons` en génère les déclinaisons PNG (Android, iOS, favicon) et l'image d'aperçu des liens partagés (`public/og.png`).
 
 ### Publication
+
+Chaque dimanche, le workflow [Données hébergées](.github/workflows/donnees.yml) reconstruit la copie des DPE de maisons (environ 2 h) et republie le site. Dans un fork, lancez-le une première fois à la main (onglet *Actions*) ; en attendant, le site utilise l'API de l'ADEME.
 
 Chaque pull request est vérifiée (tests, types, build : [workflow](.github/workflows/ci.yml)). Chaque push sur `main` construit le site et le publie sur GitHub Pages ([workflow](.github/workflows/deploy.yml)). Les nouveautés sont listées dans le [CHANGELOG](CHANGELOG.md). Comme tous les chemins sont relatifs, le dossier `dist/` fonctionne aussi tel quel sur n'importe quel hébergement statique (Netlify, Cloudflare Pages…).
 

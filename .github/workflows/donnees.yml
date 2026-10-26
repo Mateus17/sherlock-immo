@@ -1,0 +1,64 @@
+# Données hébergées : chaque dimanche, télécharge les DPE de maisons depuis l'API de l'ADEME,
+# les découpe par commune (scripts/donnees/construire.ts), les range dans la release « donnees »
+# puis republie le site. Environ 2 h pour toute la France.
+name: Données hébergées
+
+on:
+  schedule:
+    # Dimanche 3 h 17 UTC : en dehors des débuts d'heure, où GitHub retarde les tâches planifiées
+    - cron: '17 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      departements:
+        description: 'Départements à construire, séparés par des virgules (vide = toute la France)'
+        required: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: donnees
+  cancel-in-progress: false
+
+jobs:
+  construire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Télécharger et découper les DPE de maisons
+        run: npm run donnees -- --sortie donnees ${{ inputs.departements && format('--departements {0}', inputs.departements) || '' }}
+      - name: Ranger l'archive dans la release « donnees »
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tar -cf donnees.tar donnees
+          ls -lh donnees.tar
+          gh release view donnees >/dev/null 2>&1 || gh release create donnees \
+            --title "Données hébergées" \
+            --notes "Archive des DPE de maisons découpés par commune, reconstruite chaque semaine par le workflow « Données hébergées ». Utilisée par le déploiement du site ; pas une version de l'application." \
+            --prerelease --latest=false
+          gh release upload donnees donnees.tar --clobber
+      # Petit fichier de version commité : garde le dépôt « actif » (GitHub désactive les tâches
+      # planifiées d'un dépôt public sans activité depuis 60 jours) et date la dernière construction
+      - name: Mettre à jour donnees-version.json
+        run: |
+          node -e "const i=require('./donnees/index.json');require('fs').writeFileSync('donnees-version.json',JSON.stringify({genere_le:i.genere_le,maj_ademe:i.maj_ademe,lignes:i.lignes,communes:i.communes},null,2)+'\n')"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add donnees-version.json
+          git commit -m "Données hébergées du $(date -u +%Y-%m-%d)" || echo "Rien à commiter"
+          # Du code a pu être poussé pendant les ~2 h de construction
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+  deployer:
+    needs: construire
+    uses: ./.github/workflows/deploy.yml

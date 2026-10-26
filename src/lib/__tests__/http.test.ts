@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ErreurReseau, getJson, viderCache } from '../http'
+import { ATTENTES_QUOTA_S, ErreurReseau, EVENEMENT_ATTENTE, getJson, viderCache, type DetailAttente } from '../http'
 
 const reponse = (corps: unknown, status = 200) =>
   Promise.resolve(new Response(JSON.stringify(corps), { status, headers: { 'Content-Type': 'application/json' } }))
@@ -46,14 +46,51 @@ describe('getJson', () => {
     expect(await getJson('https://exemple.test/c', { service: 'Géorisques' })).toEqual({ repare: true })
   })
 
-  it('explique un dépassement du budget de l’API (429)', async () => {
+  it('attend puis réessaie en cas de quota (429), en prévenant l’interface', async () => {
+    vi.useFakeTimers()
+    const fetch = vi
+      .fn()
+      .mockImplementationOnce(() => Promise.resolve(new Response('trop', { status: 429 })))
+      .mockImplementationOnce(() => reponse({ ok: true }))
+    vi.stubGlobal('fetch', fetch)
+    const attentes: number[] = []
+    const ecoute = (e: Event) => attentes.push((e as CustomEvent<DetailAttente>).detail.secondes)
+    window.addEventListener(EVENEMENT_ATTENTE, ecoute)
+    const promesse = getJson('https://exemple.test/f', { service: 'ADEME (DPE)' })
+    await vi.advanceTimersByTimeAsync(ATTENTES_QUOTA_S[0] * 1000)
+    expect(await promesse).toEqual({ ok: true })
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(attentes).toEqual([ATTENTES_QUOTA_S[0]])
+    window.removeEventListener(EVENEMENT_ATTENTE, ecoute)
+    vi.useRealTimers()
+  })
+
+  it('abandonne avec un message clair si le quota persiste', async () => {
+    vi.useFakeTimers()
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => Promise.resolve(new Response('trop', { status: 429, headers: { 'Retry-After': '39' } }))),
+      vi.fn(() => Promise.resolve(new Response('trop', { status: 429 }))),
     )
-    await expect(getJson('https://exemple.test/f', { service: 'ADEME (DPE)' })).rejects.toThrow(
-      "ADEME (DPE) : trop de demandes d'un coup, réessayez dans 39 s",
+    const promesse = getJson('https://exemple.test/g', { service: 'ADEME (DPE)' }).catch((e: Error) => e)
+    await vi.advanceTimersByTimeAsync(ATTENTES_QUOTA_S.reduce((a, b) => a + b, 0) * 1000)
+    expect(((await promesse) as Error).message).toBe(
+      "ADEME (DPE) : trop de demandes d'un coup, réessayez dans une minute",
     )
+    vi.useRealTimers()
+  })
+
+  it('réessaie une fois après un raté réseau ponctuel', async () => {
+    vi.useFakeTimers()
+    const fetch = vi
+      .fn()
+      .mockImplementationOnce(() => Promise.reject(new TypeError('Failed to fetch')))
+      .mockImplementationOnce(() => reponse({ ok: 2 }))
+    vi.stubGlobal('fetch', fetch)
+    const promesse = getJson('https://exemple.test/h', { service: 'Géorisques' })
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(await promesse).toEqual({ ok: 2 })
+    expect(fetch).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
   })
 
   it('signale un délai dépassé', async () => {

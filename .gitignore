@@ -2,3 +2,6 @@ node_modules
 dist
 *.tsbuildinfo
 .DS_Store
+# Données hébergées : construites par la tâche hebdomadaire, jamais commitées
+public/donnees
+donnees

@@ -3,6 +3,7 @@
 // Doc : https://data.ademe.fr/datasets/dpe03existant/api-doc
 
 import { getJson } from '../lib/http'
+import * as miroir from '../lib/miroir'
 import type { Commune } from './geo'
 
 const API = 'https://data.ademe.fr/data-fair/api/v1/datasets'
@@ -201,6 +202,28 @@ export interface SearchResult {
 const tag = (list: Dpe[], source: Source) => list.map((d) => ({ ...d, _source: source }))
 
 export async function searchDpe(filters: DpeFilters, signal?: AbortSignal): Promise<SearchResult> {
+  // Maisons : données hébergées avec le site quand elles existent (aucun quota) ;
+  // le reste (appartements, immeubles, ou absence de données hébergées) : API de l'ADEME
+  if (filters.types.includes('maison') && (await miroir.disponible())) {
+    const autres = filters.types.filter((t) => t !== 'maison')
+    const [m, api] = await Promise.all([
+      miroir.rechercher(filters, signal),
+      autres.length ? searchApi({ ...filters, types: autres }, signal) : Promise.resolve(null),
+    ])
+    const zonesMiroir: ZoneCursor[] = [
+      { label: 'Maisons', source: 'existant', total: m.existants.length },
+      ...(filters.inclureNeufs ? [{ label: 'Maisons neuves', source: 'neuf' as const, total: m.neufs.length }] : []),
+    ]
+    const tri = (a: Dpe, b: Dpe) => (b.date_etablissement_dpe ?? '').localeCompare(a.date_etablissement_dpe ?? '')
+    return {
+      results: dedupe([...m.existants, ...m.neufs, ...(api?.results ?? [])].sort(tri)),
+      zones: [...zonesMiroir, ...(api?.zones ?? [])],
+    }
+  }
+  return searchApi(filters, signal)
+}
+
+async function searchApi(filters: DpeFilters, signal?: AbortSignal): Promise<SearchResult> {
   const base = buildParams(filters)
   const sources: Source[] = filters.inclureNeufs ? ['existant', 'neuf'] : ['existant']
   const requests: { label: string; source: Source; url: string }[] = []
@@ -418,7 +441,13 @@ export async function getDpeDetail(
 }
 
 // Tous les DPE (depuis 2021, existants et neufs) de la même adresse BAN, du plus ancien au plus récent
-export async function getAddressHistory(identifiantBan: string, signal?: AbortSignal): Promise<Dpe[]> {
+export async function getAddressHistory(
+  identifiantBan: string,
+  signal?: AbortSignal,
+  type?: TypeBatiment,
+): Promise<Dpe[]> {
+  // Une maison : son historique est dans le fichier hébergé de sa commune
+  if (type === 'maison' && (await miroir.disponible())) return miroir.historique(identifiantBan)
   const p = new URLSearchParams({
     size: '100',
     identifiant_ban_eq: identifiantBan,
