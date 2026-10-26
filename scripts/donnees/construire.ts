@@ -72,6 +72,10 @@ async function main() {
   const dict: Dictionnaires = { periodes: [], energies: [], ete: [] }
   const communes = new Map<string, FichierCommune>()
   let total = 0
+  // Date de mise à jour de la base, pour l'affichage ; facultative, un échec ne bloque rien
+  const meta: { dataUpdatedAt?: string } = await fetch(`${API}/dpe03existant?select=dataUpdatedAt`)
+    .then((r) => (r.ok ? r.json() : {}))
+    .catch(() => ({}))
 
   for (const dep of departements) {
     for (const base of BASES) {
@@ -114,7 +118,6 @@ async function main() {
     octets += gz.length
   }
 
-  const meta = await fetch(`${API}/dpe03existant?select=dataUpdatedAt`).then((r) => (r.ok ? r.json() : {}))
   const index: IndexMiroir = {
     version: VERSION_FORMAT,
     genere_le: new Date().toISOString(),
