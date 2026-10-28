@@ -27,6 +27,8 @@ Pour travailler sur la recherche de maisons avec les données hébergées (sinon
 npm run donnees -- --departements 35   # ≈ 2 min, écrit public/donnees/ (ignoré par git)
 ```
 
+Les communes des autres départements passent alors par l'API de l'ADEME, comme sans données hébergées.
+
 Avant de proposer une modification :
 
 ```bash

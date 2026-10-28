@@ -131,7 +131,7 @@ Le logo est un SVG unique, `public/icons/icon.svg`. `npm run icons` en génère 
 
 ### Publication
 
-Chaque dimanche, le workflow [Données hébergées](.github/workflows/donnees.yml) reconstruit la copie des DPE de maisons (environ 2 h) et republie le site. Dans un fork, lancez-le une première fois à la main (onglet *Actions*) ; en attendant, le site utilise l'API de l'ADEME.
+Chaque dimanche, le workflow [Données hébergées](.github/workflows/donnees.yml) reconstruit la copie des DPE de maisons (1 à 2 h) et republie le site. Dans un fork, lancez-le une première fois à la main (onglet *Actions*) ; en attendant, le site utilise l'API de l'ADEME.
 
 Chaque pull request est vérifiée (tests, types, build : [workflow](.github/workflows/ci.yml)). Chaque push sur `main` construit le site et le publie sur GitHub Pages ([workflow](.github/workflows/deploy.yml)). Les nouveautés sont listées dans le [CHANGELOG](CHANGELOG.md). Comme tous les chemins sont relatifs, le dossier `dist/` fonctionne aussi tel quel sur n'importe quel hébergement statique (Netlify, Cloudflare Pages…).
 
