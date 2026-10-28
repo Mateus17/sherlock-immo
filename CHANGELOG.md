@@ -11,7 +11,7 @@ Les évolutions notables de Sherlock Immo. Format inspiré de [Keep a Changelog]
 
 ### Modifié
 
-- Carte : **photo aérienne par défaut** (on y reconnaît la maison) ; le dernier fond choisi est retenu.
+- Carte : **photo aérienne par défaut** (on y reconnaît la maison), avec les **noms des rues** par-dessus (désactivables) ; les choix sont retenus.
 
 ### Corrigé
 

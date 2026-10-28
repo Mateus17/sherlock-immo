@@ -46,7 +46,29 @@ const ORTHO =
   '&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg' +
   '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}'
 
+// Routes avec leur nom, et noms de lieux : transparents, pour la photo aérienne (zoom 6 à 18)
+const surcouche = (couche: string) =>
+  'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0' +
+  `&LAYER=${couche}&STYLE=normal&FORMAT=image/png` +
+  '&TILEMATRIXSET=PM_6_18&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}'
+
 const CLE_FOND = 'sherlock-immo:fond-carte'
+const CLE_RUES = 'sherlock-immo:noms-rues'
+
+function lire(cle: string): string | null {
+  try {
+    return localStorage.getItem(cle)
+  } catch {
+    return null // stockage indisponible : réglages par défaut
+  }
+}
+function ecrire(cle: string, v: string) {
+  try {
+    localStorage.setItem(cle, v)
+  } catch {
+    // stockage indisponible : le choix vaut pour cette carte seulement
+  }
+}
 
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
@@ -137,22 +159,20 @@ onMounted(() => {
     'Plan IGN': L.tileLayer(PLAN_IGN, { maxZoom: 19, attribution: '© IGN Géoplateforme' }),
   }
   // Photo aérienne par défaut (on y reconnaît la maison) ; le dernier fond choisi est retenu
-  let choisi: keyof typeof fonds = 'Photo aérienne'
-  try {
-    const memo = localStorage.getItem(CLE_FOND)
-    if (memo && memo in fonds) choisi = memo as keyof typeof fonds
-  } catch {
-    // stockage indisponible : fond par défaut
-  }
+  const memo = lire(CLE_FOND)
+  const choisi = memo && memo in fonds ? (memo as keyof typeof fonds) : 'Photo aérienne'
   fonds[choisi].addTo(map)
-  L.control.layers(fonds).addTo(map)
-  map.on('baselayerchange', (e) => {
-    try {
-      localStorage.setItem(CLE_FOND, e.name)
-    } catch {
-      // stockage indisponible : le choix vaut pour cette carte seulement
-    }
-  })
+  // Au-dessus du fond quel qu'il soit (zIndex), affichés par défaut
+  const options = { minZoom: 6, maxNativeZoom: 18, maxZoom: 19, zIndex: 10 }
+  const rues = L.layerGroup([
+    L.tileLayer(surcouche('TRANSPORTNETWORKS.ROADS'), { ...options, opacity: 0.8 }),
+    L.tileLayer(surcouche('GEOGRAPHICALNAMES.NAMES'), options),
+  ])
+  if (lire(CLE_RUES) !== '0') rues.addTo(map)
+  L.control.layers(fonds, { 'Noms des rues': rues }).addTo(map)
+  map.on('baselayerchange', (e) => ecrire(CLE_FOND, e.name))
+  map.on('overlayadd', (e) => e.layer === rues && ecrire(CLE_RUES, '1'))
+  map.on('overlayremove', (e) => e.layer === rues && ecrire(CLE_RUES, '0'))
   // Le conteneur change de taille (grille, tableau qui apparaît) : Leaflet doit recalculer
   resizeObserver = new ResizeObserver(() => map.invalidateSize())
   resizeObserver.observe(el.value!)
