@@ -12,6 +12,7 @@ import {
   cheminCommune,
   coordonnees,
   decoderLigne,
+  departementDe,
   filtrerLignes,
   type FichierCommune,
   type IndexMiroir,
@@ -39,6 +40,10 @@ async function lireGzip(octets: ArrayBuffer): Promise<string> {
   return new Response(flux).text()
 }
 
+// La commune est-elle dans les données hébergées ? Sinon, c'est à l'API de répondre :
+// un fichier absent voudrait dire « aucune maison », à tort.
+const couvre = (idx: IndexMiroir, insee: string) => !idx.departements || idx.departements.includes(departementDe(insee))
+
 const fichiers = new Map<string, Promise<FichierCommune | null>>()
 
 // Fichier d'une commune ; null si la commune n'a aucun DPE de maison
@@ -62,7 +67,8 @@ export interface ResultatMiroir {
   neufs: Dpe[]
 }
 
-export async function rechercher(filters: DpeFilters, signal?: AbortSignal): Promise<ResultatMiroir> {
+// null si une des communes à lire n'est pas couverte par les données hébergées
+export async function rechercher(filters: DpeFilters, signal?: AbortSignal): Promise<ResultatMiroir | null> {
   const idx = await disponible()
   if (!idx) throw new Error('Données hébergées indisponibles')
 
@@ -76,6 +82,7 @@ export async function rechercher(filters: DpeFilters, signal?: AbortSignal): Pro
   }
   const codes = new Set(choisies.flatMap((c) => codesInsee(c.code)))
   if (signal?.aborted) throw new DOMException('Abandon', 'AbortError')
+  if (![...codes].every((c) => couvre(idx, c))) return null
 
   const lus = await Promise.all([...codes].map(commune))
   const resultat: ResultatMiroir = { existants: [], neufs: [] }
@@ -96,11 +103,13 @@ export async function rechercher(filters: DpeFilters, signal?: AbortSignal): Pro
   return resultat
 }
 
-// Tous les DPE de maison d'une même adresse BAN (« 35238_1310_00032 »), du plus ancien au plus récent
-export async function historique(identifiantBan: string): Promise<Dpe[]> {
+// Tous les DPE de maison d'une même adresse BAN (« 35238_1310_00032 »), du plus ancien au plus récent ;
+// null si la commune n'est pas couverte par les données hébergées
+export async function historique(identifiantBan: string): Promise<Dpe[] | null> {
   const idx = await disponible()
   if (!idx) throw new Error('Données hébergées indisponibles')
   const insee = identifiantBan.split('_')[0]
+  if (!couvre(idx, insee)) return null
   const f = await commune(insee)
   if (!f) return []
   return f.lignes

@@ -210,6 +210,8 @@ export async function searchDpe(filters: DpeFilters, signal?: AbortSignal): Prom
       miroir.rechercher(filters, signal),
       autres.length ? searchApi({ ...filters, types: autres }, signal) : Promise.resolve(null),
     ])
+    // Commune hors des données hébergées (construction partielle) : tout par l'API
+    if (!m) return searchApi(filters, signal)
     const zonesMiroir: ZoneCursor[] = [
       { label: 'Maisons', source: 'existant', total: m.existants.length },
       ...(filters.inclureNeufs ? [{ label: 'Maisons neuves', source: 'neuf' as const, total: m.neufs.length }] : []),
@@ -447,7 +449,10 @@ export async function getAddressHistory(
   type?: TypeBatiment,
 ): Promise<Dpe[]> {
   // Une maison : son historique est dans le fichier hébergé de sa commune
-  if (type === 'maison' && (await miroir.disponible())) return miroir.historique(identifiantBan)
+  if (type === 'maison' && (await miroir.disponible())) {
+    const h = await miroir.historique(identifiantBan)
+    if (h) return h
+  }
   const p = new URLSearchParams({
     size: '100',
     identifiant_ban_eq: identifiantBan,

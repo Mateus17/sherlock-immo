@@ -8,6 +8,10 @@ Les évolutions notables de Sherlock Immo. Format inspiré de [Keep a Changelog]
 
 - **Mode simple** (par défaut) : commune, type de bien, étiquettes énergie et climat, surface. Le **mode avancé** affiche les autres critères (chiffres de l'annonce, date, communes voisines et rayon, construction et équipements). Les critères avancés restent appliqués en mode simple, avec un rappel pour les voir ou les effacer.
 
+### Corrigé
+
+- Données hébergées partielles (développement, construction limitée à quelques départements) : une commune hors des départements construits passe par l'API au lieu de n'afficher aucune maison.
+
 ## [1.2.0] — 2026-10-26
 
 ### Ajouté

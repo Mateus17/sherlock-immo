@@ -52,6 +52,9 @@ export interface IndexMiroir {
   maj_ademe: string | null // date de mise à jour de la base ADEME au moment de la construction
   lignes: number
   communes: number
+  // Départements construits ; absent = toute la France. Une construction partielle
+  // (développement, workflow lancé sur quelques départements) n'en couvre que certains.
+  departements?: string[]
   dict: Dictionnaires
 }
 

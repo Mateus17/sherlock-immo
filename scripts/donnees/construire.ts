@@ -124,6 +124,7 @@ async function main() {
     maj_ademe: meta.dataUpdatedAt ?? null,
     lignes: total,
     communes: communes.size,
+    ...(departements === TOUS_DEPARTEMENTS ? {} : { departements }),
     dict,
   }
   writeFileSync(join(sortie, 'index.json'), JSON.stringify(index))
