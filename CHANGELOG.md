@@ -6,7 +6,7 @@ Les évolutions notables de Sherlock Immo. Format inspiré de [Keep a Changelog]
 
 ### Ajouté
 
-- **Mode simple** (par défaut) : commune, type de bien, étiquette DPE et surface. Le **mode avancé** affiche les autres critères (GES, chiffres de l'annonce, date, communes voisines et rayon, construction et équipements). Les critères avancés restent appliqués en mode simple, avec un rappel pour les voir ou les effacer.
+- **Mode simple** (par défaut) : commune, type de bien, étiquettes énergie et climat, surface. Le **mode avancé** affiche les autres critères (chiffres de l'annonce, date, communes voisines et rayon, construction et équipements). Les critères avancés restent appliqués en mode simple, avec un rappel pour les voir ou les effacer.
 
 ## [1.2.0] — 2026-10-26
 

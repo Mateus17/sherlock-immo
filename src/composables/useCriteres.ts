@@ -8,7 +8,7 @@ import type { Criteres } from '../lib/lien'
 const STORAGE_KEY = 'sherlock-immo:filters'
 
 export interface FormState extends Omit<DpeFilters, 'rayonKm'> {
-  avance: boolean // mode avancé : tous les critères ; sinon commune, type, étiquette DPE et surface
+  avance: boolean // mode avancé : tous les critères ; sinon commune, type, étiquettes et surface
   alentours: boolean
   rayonKm: number
   nearbyRadiusKm: number
@@ -140,7 +140,6 @@ function reset(
 const CHAMPS_AVANCES = [
   'alentours',
   'inclureNeufs',
-  'etiquettesGes',
   'consoEp',
   'ges',
   'coutMin',
@@ -161,7 +160,6 @@ const avancesActifs = computed(
     [
       form.alentours,
       !form.inclureNeufs,
-      form.etiquettesGes.length > 0,
       form.consoEp != null,
       form.ges != null,
       form.coutMin != null || form.coutMax != null,

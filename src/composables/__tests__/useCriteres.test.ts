@@ -8,6 +8,7 @@ describe('critères avancés', () => {
 
   it('compte les critères avancés actifs, pas ceux du mode simple', () => {
     form.etiquettesDpe = ['C']
+    form.etiquettesGes = ['D']
     form.surfaceCible = 96
     expect(avancesActifs.value).toBe(0)
     form.consoEp = 142

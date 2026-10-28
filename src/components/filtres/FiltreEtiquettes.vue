@@ -13,12 +13,12 @@ const { form } = useCriteres()
       <EtiquettePicker v-model="form.etiquettesDpe" label="Étiquette énergie" />
     </fieldset>
 
-    <template v-if="form.avance">
-      <fieldset class="f-ges">
-        <legend>Étiquette climat (GES)</legend>
-        <EtiquettePicker v-model="form.etiquettesGes" label="Étiquette climat" />
-      </fieldset>
+    <fieldset class="f-ges">
+      <legend>Étiquette climat (GES)</legend>
+      <EtiquettePicker v-model="form.etiquettesGes" label="Étiquette climat" />
+    </fieldset>
 
+    <template v-if="form.avance">
       <fieldset class="f-valeurs">
         <legend>Chiffres de l'annonce <small class="muted">— les plus discriminants</small></legend>
         <div class="pair">
