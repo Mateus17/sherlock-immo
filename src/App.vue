@@ -64,7 +64,7 @@ onMounted(async () => {
   const idx = await miroirDisponible()
   if (idx) {
     miroirDu.value = idx.genere_le
-    updatedAt.value = idx.maj_ademe
+    updatedAt.value = Object.values(idx.types)[0]?.maj_ademe ?? null
   } else updatedAt.value = await getDatasetUpdatedAt()
 })
 </script>
@@ -101,7 +101,7 @@ onMounted(async () => {
       <footer class="muted">
         <a href="#sources">Sources et outils</a>
         · Données publiques
-        <template v-if="miroirDu">(maisons : données du {{ new Date(miroirDu).toLocaleDateString('fr-FR') }})</template>
+        <template v-if="miroirDu">(données hébergées du {{ new Date(miroirDu).toLocaleDateString('fr-FR') }})</template>
         <template v-else-if="updatedAt">(DPE à jour au {{ new Date(updatedAt).toLocaleDateString('fr-FR') }})</template>
         · Open source
       </footer>

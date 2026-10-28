@@ -1,18 +1,24 @@
-// Construit les données hébergées : les DPE de maisons (existantes et neuves), un fichier
+// Construit les données hébergées : les DPE par type de bien (existants et neufs), un fichier
 // compressé par commune, plus donnees/index.json. Lancé chaque semaine par GitHub Actions
-// (.github/workflows/donnees.yml), ou à la main pour développer :
+// (.github/workflows/donnees.yml, un type par tâche), ou à la main pour développer :
 //
 //   npm run donnees -- --departements 35            → public/donnees (servi par `npm run dev`)
-//   npm run donnees -- --sortie donnees             → toute la France (1 à 2 h)
+//   npm run donnees -- --types maison --sortie donnees   → maisons de toute la France (≈ 1 h)
+//   npm run donnees -- --assembler --sortie donnees      → index.json à partir des types construits
+//
+// Chaque type construit écrit donnees/{dossier}/partie.json ; l'assemblage les réunit dans
+// donnees/index.json (le script le fait aussi à la fin de chaque construction).
 //
 // L'API de l'ADEME limite le temps de calcul par utilisateur : le script avance page par page
 // (10 000 lignes), sans compter le total, et attend quand l'API le demande (erreur 429).
 
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
+import type { TypeBatiment } from '../../src/api/dpe'
 import {
   CHAMPS_ADEME,
+  DOSSIERS,
   VERSION_FORMAT,
   cheminCommune,
   encoderLigne,
@@ -20,6 +26,7 @@ import {
   type FichierCommune,
   type IndexMiroir,
   type LigneAdeme,
+  type PartieMiroir,
 } from '../../src/lib/miroir-format'
 
 const API = 'https://data.ademe.fr/data-fair/api/v1/datasets'
@@ -37,6 +44,7 @@ const TOUS_DEPARTEMENTS = [
   '974',
   '976',
 ]
+const TOUS_TYPES = Object.keys(DOSSIERS) as TypeBatiment[]
 
 function argument(nom: string): string | undefined {
   const i = process.argv.indexOf(`--${nom}`)
@@ -45,6 +53,7 @@ function argument(nom: string): string | undefined {
 
 const sortie = argument('sortie') ?? 'public/donnees'
 const departements = argument('departements')?.split(',') ?? TOUS_DEPARTEMENTS
+const types = (argument('types')?.split(',') ?? TOUS_TYPES) as TypeBatiment[]
 const attendre = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 async function page(url: string): Promise<{ results: LigneAdeme[]; next?: string }> {
@@ -67,15 +76,11 @@ async function page(url: string): Promise<{ results: LigneAdeme[]; next?: string
   }
 }
 
-async function main() {
+async function construire(type: TypeBatiment, majAdeme: string | null) {
   const debut = Date.now()
   const dict: Dictionnaires = { periodes: [], energies: [], ete: [] }
   const communes = new Map<string, FichierCommune>()
   let total = 0
-  // Date de mise à jour de la base, pour l'affichage ; facultative, un échec ne bloque rien
-  const meta: { dataUpdatedAt?: string } = await fetch(`${API}/dpe03existant?select=dataUpdatedAt`)
-    .then((r) => (r.ok ? r.json() : {}))
-    .catch(() => ({}))
 
   for (const dep of departements) {
     for (const base of BASES) {
@@ -83,8 +88,10 @@ async function main() {
         size: '10000',
         count: 'false',
         select: CHAMPS_ADEME.join(','),
-        type_batiment_eq: 'maison',
-        code_departement_ban_eq: dep,
+        type_batiment_eq: type,
+        // Par préfixe du code INSEE, et non par code_departement_ban : ce champ est vide ou
+        // faux sur ~1 % des lignes (749 appartements de Rennes manquaient)
+        code_insee_ban_starts: dep,
       })
       let url: string | undefined = `${API}/${base.id}/lines?${params}`
       let n = 0
@@ -102,36 +109,66 @@ async function main() {
         url = results.length === 10_000 ? next : undefined
       }
       total += n
-      console.log(`${dep} ${base.source} : ${n} maisons (cumul ${total}, ${Math.round((Date.now() - debut) / 1000)} s)`)
+      console.log(`${type} ${dep} ${base.source} : ${n} (cumul ${total}, ${Math.round((Date.now() - debut) / 1000)} s)`)
     }
   }
 
-  rmSync(sortie, { recursive: true, force: true })
+  const dossier = join(sortie, DOSSIERS[type])
+  rmSync(dossier, { recursive: true, force: true })
   let octets = 0
   for (const f of communes.values()) {
     // Plus récents d'abord : l'ordre d'affichage par défaut
     f.lignes.sort((a, b) => String(b[1] ?? '').localeCompare(String(a[1] ?? '')))
-    const chemin = join(sortie, cheminCommune(f.insee))
+    const chemin = join(sortie, cheminCommune(f.insee, type))
     mkdirSync(join(chemin, '..'), { recursive: true })
     const gz = gzipSync(JSON.stringify(f), { level: 9 })
     writeFileSync(chemin, gz)
     octets += gz.length
   }
 
-  const index: IndexMiroir = {
+  const partie: PartieMiroir = {
     version: VERSION_FORMAT,
     genere_le: new Date().toISOString(),
-    maj_ademe: meta.dataUpdatedAt ?? null,
+    maj_ademe: majAdeme,
     lignes: total,
     communes: communes.size,
     ...(departements === TOUS_DEPARTEMENTS ? {} : { departements }),
     dict,
   }
-  writeFileSync(join(sortie, 'index.json'), JSON.stringify(index))
+  mkdirSync(dossier, { recursive: true })
+  writeFileSync(join(dossier, 'partie.json'), JSON.stringify(partie))
   console.log(
-    `Terminé : ${total} maisons, ${communes.size} communes, ${(octets / 1e6).toFixed(1)} Mo, ` +
-      `${Math.round((Date.now() - debut) / 60_000)} min → ${sortie}`,
+    `Terminé (${type}) : ${total} DPE, ${communes.size} communes, ${(octets / 1e6).toFixed(1)} Mo, ` +
+      `${Math.round((Date.now() - debut) / 60_000)} min → ${dossier}`,
   )
+}
+
+// Réunit les types construits (donnees/{dossier}/partie.json) dans donnees/index.json
+function assembler() {
+  const index: IndexMiroir = { version: VERSION_FORMAT, genere_le: '', types: {} }
+  for (const type of TOUS_TYPES) {
+    const chemin = join(sortie, DOSSIERS[type], 'partie.json')
+    if (!existsSync(chemin)) continue
+    const partie = JSON.parse(readFileSync(chemin, 'utf8')) as PartieMiroir
+    if (partie.version !== VERSION_FORMAT) continue
+    index.types[type] = partie
+    if (!index.genere_le || partie.genere_le < index.genere_le) index.genere_le = partie.genere_le
+  }
+  writeFileSync(join(sortie, 'index.json'), JSON.stringify(index))
+  const resume = Object.entries(index.types).map(([t, p]) => `${t} ${p.lignes}`)
+  console.log(`Index : ${resume.join(', ') || 'aucun type'} → ${join(sortie, 'index.json')}`)
+}
+
+async function main() {
+  if (!process.argv.includes('--assembler')) {
+    // Date de mise à jour de la base, pour l'affichage ; facultative, un échec ne bloque rien
+    const meta: { dataUpdatedAt?: string } = await fetch(`${API}/dpe03existant?select=dataUpdatedAt`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .catch(() => ({}))
+    for (const type of types) await construire(type, meta.dataUpdatedAt ?? null)
+  }
+  mkdirSync(sortie, { recursive: true })
+  assembler()
 }
 
 main().catch((e) => {

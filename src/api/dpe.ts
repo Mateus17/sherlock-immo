@@ -201,24 +201,31 @@ export interface SearchResult {
 
 const tag = (list: Dpe[], source: Source) => list.map((d) => ({ ...d, _source: source }))
 
+const LIBELLES: Record<TypeBatiment, [existants: string, neufs: string]> = {
+  maison: ['Maisons', 'Maisons neuves'],
+  appartement: ['Appartements', 'Appartements neufs'],
+  immeuble: ['Immeubles', 'Immeubles neufs'],
+}
+
 export async function searchDpe(filters: DpeFilters, signal?: AbortSignal): Promise<SearchResult> {
-  // Maisons : données hébergées avec le site quand elles existent (aucun quota) ;
-  // le reste (appartements, immeubles, ou absence de données hébergées) : API de l'ADEME
-  if (filters.types.includes('maison') && (await miroir.disponible())) {
-    const autres = filters.types.filter((t) => t !== 'maison')
+  // Types hébergés avec le site (aucun quota) ; les autres, ou l'absence de données
+  // hébergées : API de l'ADEME
+  const heberges = await miroir.typesHeberges(filters.types)
+  if (heberges.length) {
+    const autres = filters.types.filter((t) => !heberges.includes(t))
     const [m, api] = await Promise.all([
-      miroir.rechercher(filters, signal),
+      miroir.rechercher(filters, heberges, signal),
       autres.length ? searchApi({ ...filters, types: autres }, signal) : Promise.resolve(null),
     ])
     // Commune hors des données hébergées (construction partielle) : tout par l'API
     if (!m) return searchApi(filters, signal)
-    const zonesMiroir: ZoneCursor[] = [
-      { label: 'Maisons', source: 'existant', total: m.existants.length },
-      ...(filters.inclureNeufs ? [{ label: 'Maisons neuves', source: 'neuf' as const, total: m.neufs.length }] : []),
-    ]
+    const zonesMiroir: ZoneCursor[] = m.flatMap((r) => [
+      { label: LIBELLES[r.type][0], source: 'existant' as const, total: r.existants.length },
+      ...(filters.inclureNeufs ? [{ label: LIBELLES[r.type][1], source: 'neuf' as const, total: r.neufs.length }] : []),
+    ])
     const tri = (a: Dpe, b: Dpe) => (b.date_etablissement_dpe ?? '').localeCompare(a.date_etablissement_dpe ?? '')
     return {
-      results: dedupe([...m.existants, ...m.neufs, ...(api?.results ?? [])].sort(tri)),
+      results: dedupe([...m.flatMap((r) => [...r.existants, ...r.neufs]), ...(api?.results ?? [])].sort(tri)),
       zones: [...zonesMiroir, ...(api?.zones ?? [])],
     }
   }
@@ -449,8 +456,9 @@ export async function getAddressHistory(
   type?: TypeBatiment,
 ): Promise<Dpe[]> {
   // Une maison : son historique est dans le fichier hébergé de sa commune
-  if (type === 'maison' && (await miroir.disponible())) {
-    const h = await miroir.historique(identifiantBan)
+  // Type hébergé : l'historique est dans le fichier de la commune
+  if (type) {
+    const h = await miroir.historique(identifiantBan, type)
     if (h) return h
   }
   const p = new URLSearchParams({

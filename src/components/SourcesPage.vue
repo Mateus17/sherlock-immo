@@ -126,8 +126,8 @@ const logiciels = [
         >
       </p>
       <p class="small">
-        Les DPE de maisons sont <strong>copiés chaque semaine</strong> avec le site, un fichier par commune : la
-        recherche de maisons ne dépend pas des limites de l'API de l'ADEME.
+        Les DPE (maisons, appartements, immeubles) sont <strong>copiés chaque semaine</strong> avec le site, un fichier
+        par commune : la recherche ne dépend pas des limites de l'API de l'ADEME.
       </p>
       <ul class="cards">
         <li v-for="d in donnees" :key="d.nom">

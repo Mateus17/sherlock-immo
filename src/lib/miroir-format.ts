@@ -1,16 +1,26 @@
-// Format des données hébergées (« miroir ») : les DPE de maisons, un fichier par commune.
-// Partagé entre le script qui construit les fichiers (scripts/donnees/) et l'application.
+// Format des données hébergées (« miroir ») : les DPE par type de bien (maisons,
+// appartements, immeubles), un fichier par commune. Partagé entre le script qui construit
+// les fichiers (scripts/donnees/) et l'application.
 //
-// Fichier d'une commune : donnees/maisons/{departement}/{insee}.json.gz
+// Fichier d'une commune : donnees/{maisons|appartements|immeubles}/{departement}/{insee}.json.gz
 //   { "insee": "35238", "nom": "Rennes", "lignes": [[...], ...] }
 // Chaque ligne est un tableau dans l'ordre de COLONNES. Les textes répétitifs (période,
-// énergie, confort d'été) sont remplacés par leur position dans les dictionnaires de
-// donnees/index.json. L'adresse est stockée sans « code postal + commune », reconstitués
+// énergie, confort d'été) sont remplacés par leur position dans les dictionnaires du type,
+// dans donnees/index.json. L'adresse est stockée sans « code postal + commune », reconstitués
 // à la lecture. Mesuré : environ 42 octets par maison une fois compressé.
+//
+// Chaque type est construit à part (en parallèle sur GitHub Actions) et décrit par
+// donnees/{dossier}/partie.json ; donnees/index.json les rassemble.
 
-import { ENERGIES, type Dpe, type DpeFilters, type Etiquette, type Source } from '../api/dpe'
+import { ENERGIES, type Dpe, type DpeFilters, type Etiquette, type Source, type TypeBatiment } from '../api/dpe'
 
-export const VERSION_FORMAT = 1
+export const VERSION_FORMAT = 2
+
+export const DOSSIERS: Record<TypeBatiment, string> = {
+  maison: 'maisons',
+  appartement: 'appartements',
+  immeuble: 'immeubles',
+}
 
 export const COLONNES = [
   'numero',
@@ -36,6 +46,7 @@ export const COLONNES = [
   'lat',
   'lon',
   'source', // 0 = logement existant, 1 = neuf
+  'etage', // appartements
 ] as const
 
 export type Ligne = (string | number | null)[]
@@ -46,7 +57,8 @@ export interface Dictionnaires {
   ete: string[]
 }
 
-export interface IndexMiroir {
+// Un type de bien construit (donnees/{dossier}/partie.json)
+export interface PartieMiroir {
   version: number
   genere_le: string // date de construction des fichiers
   maj_ademe: string | null // date de mise à jour de la base ADEME au moment de la construction
@@ -56,6 +68,13 @@ export interface IndexMiroir {
   // (développement, workflow lancé sur quelques départements) n'en couvre que certains.
   departements?: string[]
   dict: Dictionnaires
+}
+
+// donnees/index.json : les types hébergés ; un type absent passe par l'API
+export interface IndexMiroir {
+  version: number
+  genere_le: string // le plus ancien des types : date affichée dans l'application
+  types: Partial<Record<TypeBatiment, PartieMiroir>>
 }
 
 export interface FichierCommune {
@@ -68,7 +87,8 @@ const I = Object.fromEntries(COLONNES.map((c, i) => [c, i])) as Record<(typeof C
 
 // Dossier d'un département : 2 caractères, 3 pour l'outre-mer (971…976)
 export const departementDe = (insee: string) => (insee.startsWith('97') ? insee.slice(0, 3) : insee.slice(0, 2))
-export const cheminCommune = (insee: string) => `maisons/${departementDe(insee)}/${insee}.json.gz`
+export const cheminCommune = (insee: string, type: TypeBatiment) =>
+  `${DOSSIERS[type]}/${departementDe(insee)}/${insee}.json.gz`
 
 // --- Construction (script Node) -------------------------------------------------------------
 
@@ -95,6 +115,7 @@ export interface LigneAdeme {
   nom_commune_ban?: string
   identifiant_ban?: string
   complement_adresse_logement?: string
+  numero_etage_appartement?: number
   _geopoint?: string
 }
 
@@ -122,6 +143,7 @@ export const CHAMPS_ADEME: (keyof LigneAdeme)[] = [
   'nom_commune_ban',
   'identifiant_ban',
   'complement_adresse_logement',
+  'numero_etage_appartement',
   '_geopoint',
 ]
 
@@ -166,6 +188,7 @@ export function encoderLigne(r: LigneAdeme, source: Source, dict: Dictionnaires)
   ligne[I.lat] = Number.isFinite(lat) ? arrondi5(lat) : null
   ligne[I.lon] = Number.isFinite(lon) ? arrondi5(lon) : null
   ligne[I.source] = source === 'neuf' ? 1 : 0
+  ligne[I.etage] = r.numero_etage_appartement ?? null
   // Les valeurs nulles en fin de ligne sont inutiles : on les retire
   while (ligne.length && ligne[ligne.length - 1] === null) ligne.pop()
   return ligne
@@ -175,7 +198,12 @@ export function encoderLigne(r: LigneAdeme, source: Source, dict: Dictionnaires)
 
 const val = <T>(l: Ligne, c: (typeof COLONNES)[number]) => (l[I[c]] ?? undefined) as T | undefined
 
-export function decoderLigne(l: Ligne, f: Pick<FichierCommune, 'insee' | 'nom'>, dict: Dictionnaires): Dpe {
+export function decoderLigne(
+  l: Ligne,
+  f: Pick<FichierCommune, 'insee' | 'nom'>,
+  dict: Dictionnaires,
+  type: TypeBatiment = 'maison',
+): Dpe {
   const rue = val<string>(l, 'rue')
   const cp = val<string>(l, 'cp')
   const ban = val<string>(l, 'ban')
@@ -189,7 +217,7 @@ export function decoderLigne(l: Ligne, f: Pick<FichierCommune, 'insee' | 'nom'>,
     date_visite_diagnostiqueur: val(l, 'visite'),
     etiquette_dpe: val<Etiquette>(l, 'dpe'),
     etiquette_ges: val<Etiquette>(l, 'ges'),
-    type_batiment: 'maison',
+    type_batiment: type,
     surface_habitable_logement: val(l, 'surface'),
     annee_construction: val(l, 'annee'),
     periode_construction: periode != null ? dict.periodes[periode] : undefined,
@@ -206,6 +234,7 @@ export function decoderLigne(l: Ligne, f: Pick<FichierCommune, 'insee' | 'nom'>,
     code_postal_ban: cp,
     identifiant_ban: ban ? reconstituerBan(ban, f.insee) : undefined,
     complement_adresse_logement: val(l, 'complement'),
+    numero_etage_appartement: val(l, 'etage'),
     _geopoint: lat != null && lon != null ? `${lat},${lon}` : undefined,
     _source: val<number>(l, 'source') === 1 ? 'neuf' : 'existant',
   }

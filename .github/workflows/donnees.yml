@@ -1,6 +1,7 @@
-# Données hébergées : chaque dimanche, télécharge les DPE de maisons depuis l'API de l'ADEME,
-# les découpe par commune (scripts/donnees/construire.ts), les range dans la release « donnees »
-# puis republie le site. Environ 2 h pour toute la France.
+# Données hébergées : chaque dimanche, télécharge les DPE depuis l'API de l'ADEME, les découpe
+# par commune (scripts/donnees/construire.ts), les range dans la release « donnees » puis
+# republie le site. Un type de bien par tâche, en parallèle (chacune a droit à 6 h) :
+# environ 1 h pour les maisons, 2 h 30 pour les appartements.
 name: Données hébergées
 
 on:
@@ -24,8 +25,13 @@ concurrency:
 
 jobs:
   construire:
+    strategy:
+      # Un type en échec ne publie rien : les données de la semaine précédente restent en ligne
+      fail-fast: true
+      matrix:
+        type: [maison, appartement, immeuble]
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 340
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -33,8 +39,33 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Télécharger et découper les DPE de maisons
-        run: npm run donnees -- --sortie donnees ${{ inputs.departements && format('--departements {0}', inputs.departements) || '' }}
+      - name: Télécharger et découper les DPE (${{ matrix.type }})
+        run: npm run donnees -- --types ${{ matrix.type }} --sortie donnees ${{ inputs.departements && format('--departements {0}', inputs.departements) || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: donnees-${{ matrix.type }}
+          path: donnees
+          retention-days: 1
+          # Fichiers déjà compressés
+          compression-level: 0
+
+  publier:
+    needs: construire
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: donnees-*
+          path: donnees
+          merge-multiple: true
+      - name: Rassembler les types dans index.json
+        run: npm run donnees -- --assembler --sortie donnees
       - name: Ranger l'archive dans la release « donnees »
         env:
           GH_TOKEN: ${{ github.token }}
@@ -43,22 +74,22 @@ jobs:
           ls -lh donnees.tar
           gh release view donnees >/dev/null 2>&1 || gh release create donnees \
             --title "Données hébergées" \
-            --notes "Archive des DPE de maisons découpés par commune, reconstruite chaque semaine par le workflow « Données hébergées ». Utilisée par le déploiement du site ; pas une version de l'application." \
+            --notes "Archive des DPE découpés par commune, reconstruite chaque semaine par le workflow « Données hébergées ». Utilisée par le déploiement du site ; pas une version de l'application." \
             --prerelease --latest=false
           gh release upload donnees donnees.tar --clobber
       # Petit fichier de version commité : garde le dépôt « actif » (GitHub désactive les tâches
       # planifiées d'un dépôt public sans activité depuis 60 jours) et date la dernière construction
       - name: Mettre à jour donnees-version.json
         run: |
-          node -e "const i=require('./donnees/index.json');require('fs').writeFileSync('donnees-version.json',JSON.stringify({genere_le:i.genere_le,maj_ademe:i.maj_ademe,lignes:i.lignes,communes:i.communes},null,2)+'\n')"
+          node -e "const i=require('./donnees/index.json');const t=Object.fromEntries(Object.entries(i.types).map(([k,p])=>[k,{lignes:p.lignes,communes:p.communes}]));require('fs').writeFileSync('donnees-version.json',JSON.stringify({genere_le:i.genere_le,types:t},null,2)+'\n')"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add donnees-version.json
           git commit -m "Données hébergées du $(date -u +%Y-%m-%d)" || echo "Rien à commiter"
-          # Du code a pu être poussé pendant les ~2 h de construction
+          # Du code a pu être poussé pendant les heures de construction
           git pull --rebase origin main
           git push origin HEAD:main
 
   deployer:
-    needs: construire
+    needs: publier
     uses: ./.github/workflows/deploy.yml

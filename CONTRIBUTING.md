@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-Pour travailler sur la recherche de maisons avec les données hébergées (sinon, l'application passe par l'API de l'ADEME) :
+Pour travailler sur la recherche avec les données hébergées (sinon, l'application passe par l'API de l'ADEME) :
 
 ```bash
 npm run donnees -- --departements 35   # ≈ 2 min, écrit public/donnees/ (ignoré par git)

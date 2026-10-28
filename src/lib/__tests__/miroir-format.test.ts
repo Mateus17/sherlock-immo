@@ -109,9 +109,18 @@ describe('format des données hébergées', () => {
     expect(garde({ inclureNeufs: false })).toBe(true)
   })
 
-  it('range chaque commune dans le dossier de son département', () => {
-    expect(cheminCommune('35238')).toBe('maisons/35/35238.json.gz')
-    expect(cheminCommune('2A004')).toBe('maisons/2A/2A004.json.gz')
-    expect(cheminCommune('97411')).toBe('maisons/974/97411.json.gz')
+  it('range chaque commune dans le dossier de son type et de son département', () => {
+    expect(cheminCommune('35238', 'maison')).toBe('maisons/35/35238.json.gz')
+    expect(cheminCommune('2A004', 'appartement')).toBe('appartements/2A/2A004.json.gz')
+    expect(cheminCommune('97411', 'immeuble')).toBe('immeubles/974/97411.json.gz')
+  })
+
+  it("garde l'étage et le type d'un appartement", () => {
+    const dict: Dictionnaires = { periodes: [], energies: [], ete: [] }
+    const appart = { ...brut, numero_etage_appartement: 3, complement_adresse_logement: 'Bât. B' }
+    const d = decoderLigne(encoderLigne(appart, 'existant', dict), fichier, dict, 'appartement')
+    expect(d.type_batiment).toBe('appartement')
+    expect(d.numero_etage_appartement).toBe(3)
+    expect(d.complement_adresse_logement).toBe('Bât. B')
   })
 })

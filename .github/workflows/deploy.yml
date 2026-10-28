@@ -33,7 +33,7 @@ jobs:
         env:
           # Lien « code source » affiché sur la page Sources et outils
           VITE_REPO_URL: https://github.com/${{ github.repository }}
-      # Données hébergées (maisons) : dernière archive construite par donnees.yml.
+      # Données hébergées : dernière archive construite par donnees.yml.
       # Absente (fork tout neuf) : le site fonctionne quand même, via l'API de l'ADEME.
       - name: Ajouter les données hébergées
         env:
