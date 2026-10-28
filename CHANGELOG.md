@@ -7,7 +7,7 @@ Les évolutions notables de Sherlock Immo. Format inspiré de [Keep a Changelog]
 ### Ajouté
 
 - **Mode simple** (par défaut) : commune, type de bien, étiquettes énergie et climat, surface. Le **mode avancé** affiche les autres critères (chiffres de l'annonce, date, communes voisines et rayon, construction et équipements). Les critères avancés restent appliqués en mode simple, avec un rappel pour les voir ou les effacer.
-- Lien **Voir sur Google Maps** dans la bulle d'un point de la carte.
+- **Bulle de la carte** refaite : étiquette en grand, adresse, chiffres clés (surface, kWh/m²/an, GES, année), date du DPE, boutons « Fiche DPE » et « Google Maps » ; suit le thème sombre.
 
 ### Modifié
 

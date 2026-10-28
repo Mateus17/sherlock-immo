@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import L from '../lib/leaflet'
-import { DPE_COLORS, observatoireUrl, parseGeopoint, type Dpe } from '../api/dpe'
+import { DPE_COLORS, observatoireUrl, parseGeopoint, type Dpe, type Etiquette } from '../api/dpe'
 import type { Commune } from '../api/geo'
 
 const props = defineProps<{
@@ -52,20 +52,45 @@ function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 }
 
+// Bulle d'un point : étiquette en grand, adresse, chiffres clés et liens
 function popupHtml(d: Dpe) {
   const pt = parseGeopoint(d)
-  const lines = [
-    `<strong>${escapeHtml(d.adresse_ban ?? 'Adresse inconnue')}</strong>`,
-    d.complement_adresse_logement ? escapeHtml(d.complement_adresse_logement) : '',
-    `DPE <b>${d.etiquette_dpe ?? '–'}</b> · GES <b>${d.etiquette_ges ?? '–'}</b> · ${d.surface_habitable_logement ?? '?'} m²`,
-    `${d.type_batiment ?? ''} ${d.annee_construction ? `· ${d.annee_construction}` : ''}`,
-    `<a href="${observatoireUrl(d.numero_dpe)}" target="_blank" rel="noopener">Voir le DPE ↗</a>`,
-    // Point exact de l'adresse (coordonnées BAN), plus fiable qu'une recherche par texte
-    pt
-      ? `<a href="https://www.google.com/maps/search/?api=1&amp;query=${pt[0]},${pt[1]}" target="_blank" rel="noopener">Voir sur Google Maps ↗</a>`
-      : '',
-  ]
-  return lines.filter(Boolean).join('<br>')
+  // « 12 Rue X 35000 Rennes » → rue / « 35000 Rennes »
+  const adresse = d.adresse_ban ?? 'Adresse inconnue'
+  const m = adresse.match(/^(.*?)\s+(\d{5}\s.*)$/)
+  const [rue, ville] = m ? [m[1], m[2]] : [adresse, '']
+  const etiquette = (e: Etiquette | undefined, nom: string) =>
+    e ? `<span class="pop-etiq" style="background:${DPE_COLORS[e]}" title="${nom} ${e}">${e}</span>` : ''
+  const chips = [
+    d.surface_habitable_logement != null ? `${d.surface_habitable_logement.toLocaleString('fr-FR')} m²` : '',
+    d.conso_5_usages_par_m2_ep != null ? `${Math.round(d.conso_5_usages_par_m2_ep)} kWh/m²/an` : '',
+    d.etiquette_ges ? `GES ${d.etiquette_ges}` : '',
+    d.annee_construction ? `${d.annee_construction}` : (d.periode_construction ?? ''),
+  ].filter(Boolean)
+  const date = d.date_etablissement_dpe ? new Date(d.date_etablissement_dpe).toLocaleDateString('fr-FR') : null
+  const genre = [d.type_batiment, d._source === 'neuf' ? 'neuf' : ''].filter(Boolean).join(' · ')
+  return `
+    <div class="pop">
+      <div class="pop-tete">
+        ${etiquette(d.etiquette_dpe, 'DPE') || '<span class="pop-etiq pop-vide">?</span>'}
+        <div class="pop-adresse">
+          <strong>${escapeHtml(rue)}</strong>
+          ${ville ? `<span>${escapeHtml(ville)}</span>` : ''}
+          ${d.complement_adresse_logement ? `<small>${escapeHtml(d.complement_adresse_logement)}</small>` : ''}
+        </div>
+      </div>
+      ${chips.length ? `<div class="pop-chips">${chips.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>` : ''}
+      <div class="pop-meta">${escapeHtml(genre)}${date ? ` · DPE du ${date}` : ''}</div>
+      <div class="pop-liens">
+        <a href="${observatoireUrl(d.numero_dpe)}" target="_blank" rel="noopener">Fiche DPE ↗</a>
+        ${
+          // Point exact de l'adresse (coordonnées BAN), plus fiable qu'une recherche par texte
+          pt
+            ? `<a href="https://www.google.com/maps/search/?api=1&amp;query=${pt[0]},${pt[1]}" target="_blank" rel="noopener">Google Maps ↗</a>`
+            : ''
+        }
+      </div>
+    </div>`
 }
 
 function renderMarkers() {
@@ -76,7 +101,7 @@ function renderMarkers() {
     if (!pt) continue
     const color = d.etiquette_dpe ? DPE_COLORS[d.etiquette_dpe] : '#888'
     const m = L.circleMarker(pt, { radius: 7, color: '#222', weight: 1, fillColor: color, fillOpacity: 0.9 })
-      .bindPopup(popupHtml(d))
+      .bindPopup(popupHtml(d), { className: 'popup-dpe', minWidth: 240, maxWidth: 300 })
       .on('click', () => emit('select', d.numero_dpe))
     m.addTo(markersLayer)
     markers.set(d.numero_dpe, m)
