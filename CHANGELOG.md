@@ -13,8 +13,12 @@ Les évolutions notables de Sherlock Immo. Format inspiré de [Keep a Changelog]
 
 - Carte : **photo aérienne par défaut** (on y reconnaît la maison), avec les **noms des rues** par-dessus (désactivables) ; les choix sont retenus.
 
+- **Téléphone** : toucher un point ouvre sa bulle (et non la fiche plein écran, qui la cachait), avec un bouton « Ouvrir la fiche » ; barre des résultats plus compacte.
+
 ### Corrigé
 
+- Compteur de résultats : espaces manquants (« 123 affichés (9 doublons masqués, dont 2 neufs) »).
+- Surfaces au format français (« 96,8 m² ») dans le tableau et les points d'attention.
 - Données hébergées partielles (développement, construction limitée à quelques départements) : une commune hors des départements construits passe par l'API au lieu de n'afficher aucune maison.
 
 ## [1.2.0] — 2026-10-26

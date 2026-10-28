@@ -95,7 +95,11 @@ function copy(text?: string) {
             </small>
           </td>
           <td><DpeBadge :value="d.etiquette_dpe" /></td>
-          <td class="num">{{ d.surface_habitable_logement != null ? `${d.surface_habitable_logement} m²` : '–' }}</td>
+          <td class="num">
+            {{
+              d.surface_habitable_logement != null ? `${d.surface_habitable_logement.toLocaleString('fr-FR')} m²` : '–'
+            }}
+          </td>
           <td class="num">{{ d.annee_construction ?? d.periode_construction ?? '–' }}</td>
           <td class="num">{{ formatDate(d.date_etablissement_dpe) }}</td>
           <td><DpeBadge :value="d.etiquette_ges" /></td>

@@ -217,6 +217,25 @@ button.primary:hover:not(:disabled) {
   display: flex;
   gap: 8px;
 }
+/* « Ouvrir la fiche » : sur téléphone seulement, la fiche s'ouvre déjà à côté sur ordinateur */
+.pop-fiche {
+  display: none;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent-strong);
+  color: #fff;
+  font-weight: 600;
+}
+@media (max-width: 860px) {
+  .pop-fiche {
+    display: block;
+  }
+  /* Carte étroite : le bouton des calques masquerait la croix de la bulle */
+  .bulle-ouverte .leaflet-control-layers {
+    visibility: hidden;
+  }
+}
 .pop-liens a {
   flex: 1;
   padding: 6px 10px;

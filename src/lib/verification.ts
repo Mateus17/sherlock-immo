@@ -18,6 +18,7 @@ const REFORME_ELEC_2026 = '2026-01-01'
 
 const rank = (e?: string) => (e ? ETIQUETTES.indexOf(e as Etiquette) : -1)
 const fmtDate = (s?: string) => (s ? new Date(s).toLocaleDateString('fr-FR') : '?')
+const nb = (n: number) => n.toLocaleString('fr-FR') // 91,5 et non 91.5
 const monthsBetween = (a: string, b: string) =>
   Math.abs(new Date(b).getTime() - new Date(a).getTime()) / (1000 * 60 * 60 * 24 * 30.44)
 
@@ -99,7 +100,7 @@ function analyserTerritoire(ctx: Contexte): Point[] {
     if (fiscale && s && s > fiscale * 1.3 && s - fiscale > 15)
       points.push({
         niveau: 'alerte',
-        titre: `Surface déclarée aux impôts : ${fiscale} m², contre ${s} m² au DPE`,
+        titre: `Surface déclarée aux impôts : ${fiscale} m², contre ${nb(s)} m² au DPE`,
         question:
           "Les agrandissements ont-ils fait l'objet d'un permis ou d'une déclaration, et la taxe foncière a-t-elle été mise à jour ?",
         detail:
@@ -218,15 +219,15 @@ export function analyser(ctx: Contexte): Point[] {
         niveau: 'alerte',
         titre: `Surface annoncée supérieure de ${ecart.toFixed(0)} % au DPE`,
         question: 'Pouvez-vous fournir le mesurage de la surface habitable (loi Boutin, ou Carrez en copropriété) ?',
-        detail: `${surfaceAnnonce} m² annoncés contre ${s} m² habitables. Véranda, combles, sous-sol ou garage comptés ? Demandez le métrage loi Boutin (ou Carrez en copropriété).`,
+        detail: `${nb(surfaceAnnonce)} m² annoncés contre ${nb(s)} m² habitables. Véranda, combles, sous-sol ou garage comptés ? Demandez le métrage loi Boutin (ou Carrez en copropriété).`,
       })
     else if (ecart < -5)
       points.push({
         niveau: 'info',
         titre: `Surface annoncée inférieure de ${Math.abs(ecart).toFixed(0)} % au DPE`,
-        detail: `${surfaceAnnonce} m² annoncés contre ${s} m² dans le DPE. Vérifiez que c'est bien le même logement.`,
+        detail: `${nb(surfaceAnnonce)} m² annoncés contre ${nb(s)} m² dans le DPE. Vérifiez que c'est bien le même logement.`,
       })
-    else points.push({ niveau: 'ok', titre: 'Surface cohérente avec le DPE', detail: `${s} m² habitables.` })
+    else points.push({ niveau: 'ok', titre: 'Surface cohérente avec le DPE', detail: `${nb(s)} m² habitables.` })
   }
 
   // --- Validité
@@ -322,7 +323,7 @@ export function analyser(ctx: Contexte): Point[] {
       niveau: 'alerte',
       titre: 'DPE refait sans nouvelle visite',
       question: "Qu'est-ce qui a été corrigé entre les deux DPE, sans nouvelle visite du diagnostiqueur ?",
-      detail: `Visite du ${fmtDate(dpe.date_visite_diagnostiqueur)}, avant le DPE précédent du ${fmtDate(prec.date_etablissement_dpe)} (${prec.etiquette_dpe}, ${prec.surface_habitable_logement ?? '?'} m²). Mêmes relevés, résultat différent : demandez au diagnostiqueur ce qui a été corrigé.`,
+      detail: `Visite du ${fmtDate(dpe.date_visite_diagnostiqueur)}, avant le DPE précédent du ${fmtDate(prec.date_etablissement_dpe)} (${prec.etiquette_dpe}, ${prec.surface_habitable_logement != null ? nb(prec.surface_habitable_logement) : '?'} m²). Mêmes relevés, résultat différent : demandez au diagnostiqueur ce qui a été corrigé.`,
     })
 
   // Surface qui change d'un DPE à l'autre : plus de m² fait baisser les kWh/m², donc l'étiquette
@@ -334,7 +335,7 @@ export function analyser(ctx: Contexte): Point[] {
     if (Math.abs(ecart) > 5)
       points.push({
         niveau: ecart > 0 ? 'alerte' : 'attention',
-        titre: `Surface ${ecart > 0 ? 'augmentée' : 'réduite'} de ${s0} à ${s1} m² entre deux DPE`,
+        titre: `Surface ${ecart > 0 ? 'augmentée' : 'réduite'} de ${nb(s0)} à ${nb(s1)} m² entre deux DPE`,
         question: 'Quelle est la surface habitable exacte, et pourquoi a-t-elle changé entre les deux DPE ?',
         detail:
           ecart > 0

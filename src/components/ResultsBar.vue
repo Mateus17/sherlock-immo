@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useCriteres } from '../composables/useCriteres'
 import { useFavoris } from '../composables/useFavoris'
 import { useLienPartage } from '../composables/useLienPartage'
@@ -12,6 +13,15 @@ const { error, total, displayed, hiddenDuplicates, totalNeufs, hasMore, loading,
 const { lienCopie, partager } = useLienPartage()
 const { liste: favoris } = useFavoris()
 const n = (v: number) => v.toLocaleString('fr-FR')
+// « (9 doublons masqués, dont 2 neufs) »
+const precisions = computed(() =>
+  [
+    hiddenDuplicates.value ? `${n(hiddenDuplicates.value)} doublons masqués` : '',
+    totalNeufs.value ? `dont ${n(totalNeufs.value)} neufs` : '',
+  ]
+    .filter(Boolean)
+    .join(', '),
+)
 </script>
 
 <template>
@@ -20,20 +30,20 @@ const n = (v: number) => v.toLocaleString('fr-FR')
     <span v-if="error" class="error" role="alert">Erreur : {{ error }}</span>
     <p v-else class="count" aria-live="polite">
       <strong>{{ n(total) }}</strong> DPE trouvés
-      <span class="muted">· {{ n(displayed.length) }} affichés</span>
-      <span v-if="hiddenDuplicates" class="muted">({{ hiddenDuplicates }} doublons masqués)</span>
-      <span v-if="totalNeufs" class="muted">(dont {{ n(totalNeufs) }} neufs)</span>
+      <span class="muted">
+        · {{ n(displayed.length) }} affichés<template v-if="precisions"> ({{ precisions }})</template></span
+      >
     </p>
     <span class="spacer"></span>
     <label class="check">
       <input v-model="form.unParAdresse" type="checkbox" />
-      Un seul DPE par adresse (le plus récent)
+      Un seul DPE par adresse<span class="long"> (le plus récent)</span>
     </label>
     <button type="button" :title="lienCopie ? '' : 'Copier le lien de cette recherche'" @click="partager">
       {{ lienCopie ? 'Lien copié ✓' : 'Partager' }}
     </button>
     <button v-if="hasMore" type="button" :disabled="loading" @click="more">Charger plus</button>
-    <button type="button" @click="telechargerCsv(displayed)">Exporter CSV</button>
+    <button type="button" class="csv" @click="telechargerCsv(displayed)">Exporter CSV</button>
     <a href="#favoris" class="favoris"
       >★ Favoris<template v-if="favoris.length"> ({{ favoris.length }})</template></a
     >
@@ -68,5 +78,24 @@ const n = (v: number) => v.toLocaleString('fr-FR')
 }
 .error {
   color: #c62828;
+}
+/* Téléphone : compteur sur sa ligne, actions regroupées dessous */
+@media (max-width: 600px) {
+  .summary {
+    gap: 6px 10px;
+  }
+  .count {
+    flex-basis: 100%;
+    order: -1;
+    padding-top: 2px;
+  }
+  .summary > button:first-child {
+    order: -2;
+  }
+  .spacer,
+  .long,
+  .csv {
+    display: none;
+  }
 }
 </style>

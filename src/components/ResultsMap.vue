@@ -52,6 +52,9 @@ const surcouche = (couche: string) =>
   `&LAYER=${couche}&STYLE=normal&FORMAT=image/png` +
   '&TILEMATRIXSET=PM_6_18&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}'
 
+// Même seuil que la mise en page téléphone (App.vue)
+const petitEcran = matchMedia('(max-width: 860px)')
+
 const CLE_FOND = 'sherlock-immo:fond-carte'
 const CLE_RUES = 'sherlock-immo:noms-rues'
 
@@ -103,6 +106,7 @@ function popupHtml(d: Dpe) {
       </div>
       ${chips.length ? `<div class="pop-chips">${chips.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>` : ''}
       <div class="pop-meta">${escapeHtml(genre)}${date ? ` · DPE du ${date}` : ''}</div>
+      <button type="button" class="pop-fiche">Ouvrir la fiche</button>
       <div class="pop-liens">
         <a href="${observatoireUrl(d.numero_dpe)}" target="_blank" rel="noopener">Fiche DPE ↗</a>
         ${
@@ -123,8 +127,23 @@ function renderMarkers() {
     if (!pt) continue
     const color = d.etiquette_dpe ? DPE_COLORS[d.etiquette_dpe] : '#888'
     const m = L.circleMarker(pt, { radius: 7, color: '#222', weight: 1, fillColor: color, fillOpacity: 0.9 })
-      .bindPopup(popupHtml(d), { className: 'popup-dpe', minWidth: 240, maxWidth: 300 })
-      .on('click', () => emit('select', d.numero_dpe))
+      .bindPopup(popupHtml(d), {
+        className: 'popup-dpe',
+        minWidth: 240,
+        maxWidth: 300,
+        autoPanPaddingTopLeft: [48, 10],
+      })
+      // Sur ordinateur, la fiche s'ouvre à côté de la bulle. Sur téléphone, elle couvrirait
+      // l'écran : la bulle s'affiche seule, et son bouton « Ouvrir la fiche » prend le relais.
+      .on('click', () => {
+        if (!petitEcran.matches) emit('select', d.numero_dpe)
+      })
+      .on('popupopen', (e) => {
+        e.popup
+          .getElement()
+          ?.querySelector('.pop-fiche')
+          ?.addEventListener('click', () => emit('select', d.numero_dpe))
+      })
     m.addTo(markersLayer)
     markers.set(d.numero_dpe, m)
   }
@@ -171,6 +190,8 @@ onMounted(() => {
   if (lire(CLE_RUES) !== '0') rues.addTo(map)
   L.control.layers(fonds, { 'Noms des rues': rues }).addTo(map)
   map.on('baselayerchange', (e) => ecrire(CLE_FOND, e.name))
+  map.on('popupopen', () => el.value?.classList.add('bulle-ouverte'))
+  map.on('popupclose', () => el.value?.classList.remove('bulle-ouverte'))
   map.on('overlayadd', (e) => e.layer === rues && ecrire(CLE_RUES, '1'))
   map.on('overlayremove', (e) => e.layer === rues && ecrire(CLE_RUES, '0'))
   // Le conteneur change de taille (grille, tableau qui apparaît) : Leaflet doit recalculer
