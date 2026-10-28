@@ -1,6 +1,17 @@
 {
-  "genere_le": "2026-10-26T20:18:22.366Z",
-  "maj_ademe": "2026-10-21T19:13:45.004Z",
-  "lignes": 5013413,
-  "communes": 34923
+  "genere_le": "2026-10-28T17:28:44.064Z",
+  "types": {
+    "maison": {
+      "lignes": 23,
+      "communes": 9
+    },
+    "appartement": {
+      "lignes": 87,
+      "communes": 8
+    },
+    "immeuble": {
+      "lignes": 1,
+      "communes": 1
+    }
+  }
 }
