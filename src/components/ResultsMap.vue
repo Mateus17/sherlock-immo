@@ -46,17 +46,24 @@ const ORTHO =
   '&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg' +
   '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}'
 
+const CLE_FOND = 'sherlock-immo:fond-carte'
+
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 }
 
 function popupHtml(d: Dpe) {
+  const pt = parseGeopoint(d)
   const lines = [
     `<strong>${escapeHtml(d.adresse_ban ?? 'Adresse inconnue')}</strong>`,
     d.complement_adresse_logement ? escapeHtml(d.complement_adresse_logement) : '',
     `DPE <b>${d.etiquette_dpe ?? '–'}</b> · GES <b>${d.etiquette_ges ?? '–'}</b> · ${d.surface_habitable_logement ?? '?'} m²`,
     `${d.type_batiment ?? ''} ${d.annee_construction ? `· ${d.annee_construction}` : ''}`,
     `<a href="${observatoireUrl(d.numero_dpe)}" target="_blank" rel="noopener">Voir le DPE ↗</a>`,
+    // Point exact de l'adresse (coordonnées BAN), plus fiable qu'une recherche par texte
+    pt
+      ? `<a href="https://www.google.com/maps/search/?api=1&amp;query=${pt[0]},${pt[1]}" target="_blank" rel="noopener">Voir sur Google Maps ↗</a>`
+      : '',
   ]
   return lines.filter(Boolean).join('<br>')
 }
@@ -100,9 +107,27 @@ function fit() {
 
 onMounted(() => {
   map = L.map(el.value!, { preferCanvas: true }).setView([46.6, 2.5], 6)
-  const plan = L.tileLayer(PLAN_IGN, { maxZoom: 19, attribution: '© IGN Géoplateforme' }).addTo(map)
-  const ortho = L.tileLayer(ORTHO, { maxZoom: 19, attribution: '© IGN Géoplateforme' })
-  L.control.layers({ 'Plan IGN': plan, 'Photo aérienne': ortho }).addTo(map)
+  const fonds = {
+    'Photo aérienne': L.tileLayer(ORTHO, { maxZoom: 19, attribution: '© IGN Géoplateforme' }),
+    'Plan IGN': L.tileLayer(PLAN_IGN, { maxZoom: 19, attribution: '© IGN Géoplateforme' }),
+  }
+  // Photo aérienne par défaut (on y reconnaît la maison) ; le dernier fond choisi est retenu
+  let choisi: keyof typeof fonds = 'Photo aérienne'
+  try {
+    const memo = localStorage.getItem(CLE_FOND)
+    if (memo && memo in fonds) choisi = memo as keyof typeof fonds
+  } catch {
+    // stockage indisponible : fond par défaut
+  }
+  fonds[choisi].addTo(map)
+  L.control.layers(fonds).addTo(map)
+  map.on('baselayerchange', (e) => {
+    try {
+      localStorage.setItem(CLE_FOND, e.name)
+    } catch {
+      // stockage indisponible : le choix vaut pour cette carte seulement
+    }
+  })
   // Le conteneur change de taille (grille, tableau qui apparaît) : Leaflet doit recalculer
   resizeObserver = new ResizeObserver(() => map.invalidateSize())
   resizeObserver.observe(el.value!)
