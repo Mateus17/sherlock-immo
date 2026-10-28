@@ -8,6 +8,7 @@ import type { Criteres } from '../lib/lien'
 const STORAGE_KEY = 'sherlock-immo:filters'
 
 export interface FormState extends Omit<DpeFilters, 'rayonKm'> {
+  avance: boolean // mode avancé : tous les critères ; sinon commune, type, étiquette DPE et surface
   alentours: boolean
   rayonKm: number
   nearbyRadiusKm: number
@@ -19,6 +20,7 @@ export interface FormState extends Omit<DpeFilters, 'rayonKm'> {
 }
 
 export const defaults: FormState = {
+  avance: false,
   communes: [],
   alentours: false,
   rayonKm: 10,
@@ -126,11 +128,57 @@ function criteres(): Criteres {
   }
 }
 
-// Réinitialise tout sauf ce qu'on précise (par défaut : les communes)
-function reset(garder: Partial<FormState> = { communes: form.communes, nearbyRadiusKm: form.nearbyRadiusKm }) {
+// Réinitialise tout sauf ce qu'on précise (par défaut : les communes et le mode)
+function reset(
+  garder: Partial<FormState> = { communes: form.communes, nearbyRadiusKm: form.nearbyRadiusKm, avance: form.avance },
+) {
   Object.assign(form, { ...defaults, ...garder })
 }
 
+// Critères du mode avancé. Cachés en mode simple, ils restent appliqués : le formulaire
+// signale combien sont actifs et permet de les effacer.
+const CHAMPS_AVANCES = [
+  'alentours',
+  'inclureNeufs',
+  'etiquettesGes',
+  'consoEp',
+  'ges',
+  'coutMin',
+  'coutMax',
+  'dateMin',
+  'dateMax',
+  'dateExacte',
+  'periodes',
+  'energies',
+  'pompeAChaleur',
+  'plainPied',
+  'avecPhotovoltaique',
+  'confortEteBon',
+] as const satisfies (keyof FormState)[]
+
+const avancesActifs = computed(
+  () =>
+    [
+      form.alentours,
+      !form.inclureNeufs,
+      form.etiquettesGes.length > 0,
+      form.consoEp != null,
+      form.ges != null,
+      form.coutMin != null || form.coutMax != null,
+      form.dateMin != null || form.dateMax != null,
+      form.periodes.length > 0,
+      form.energies.length > 0,
+      form.pompeAChaleur,
+      form.plainPied,
+      form.avecPhotovoltaique,
+      form.confortEteBon,
+    ].filter(Boolean).length,
+)
+
+function effacerAvances() {
+  Object.assign(form, Object.fromEntries(CHAMPS_AVANCES.map((k) => [k, defaults[k]])))
+}
+
 export function useCriteres() {
-  return { form, surfaceBounds, dateBounds, toFilters, criteres, reset }
+  return { form, surfaceBounds, dateBounds, toFilters, criteres, reset, avancesActifs, effacerAvances }
 }

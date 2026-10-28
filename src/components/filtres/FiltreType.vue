@@ -20,7 +20,7 @@ const TYPES: { value: TypeBatiment; label: string }[] = [
         {{ t.label }}
       </label>
     </div>
-    <label class="check">
+    <label v-if="form.avance" class="check">
       <input v-model="form.inclureNeufs" type="checkbox" />
       Inclure les logements neufs (construits depuis 2021)
     </label>

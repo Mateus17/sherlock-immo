@@ -7,7 +7,7 @@ import { copier } from '../lib/presse-papiers'
 import { defaults, useCriteres } from './useCriteres'
 
 const lienCopie = ref(false)
-const { form, criteres } = useCriteres()
+const { form, criteres, avancesActifs } = useCriteres()
 
 function url() {
   return `${location.origin}${location.pathname}?${versParams(criteres())}`
@@ -49,7 +49,9 @@ async function ouvrir(): Promise<boolean> {
     communes,
     alentours: rayonKm != null,
     rayonKm: rayonKm ?? defaults.rayonKm,
+    avance: form.avance,
   })
+  if (avancesActifs.value) form.avance = true
   return true
 }
 

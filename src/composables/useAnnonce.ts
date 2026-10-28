@@ -9,7 +9,7 @@ import { useCriteres } from './useCriteres'
 const annonce = reactive<{ prix: number | null; terrain: number | null }>({ prix: null, terrain: null })
 const bilan = ref<string[] | null>(null)
 
-const { form, reset } = useCriteres()
+const { form, reset, avancesActifs } = useCriteres()
 
 async function communesDeLAnnonce(i: IndicesAnnonce): Promise<Commune[]> {
   try {
@@ -76,6 +76,8 @@ async function appliquer(i: IndicesAnnonce) {
     form.communes = communes
     faits.unshift(communes.map((c) => c.nom).join(', '))
   }
+  // Chiffres de l'annonce (kWh, CO₂, dépenses…) : ils ne se voient qu'en mode avancé
+  if (avancesActifs.value) form.avance = true
   bilan.value = faits
 }
 

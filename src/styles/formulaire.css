@@ -114,6 +114,29 @@
   flex: 1;
 }
 
+/* Bascule mode simple / avancé */
+.filters .mode {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filters .mode .segmented {
+  align-self: flex-start;
+}
+.filters .mode .segmented button {
+  flex: 0 0 auto;
+  padding: 6px 16px;
+}
+.filters .link {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  padding: 0;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* Pastilles à bascule (périodes, énergies) */
 .filters .chips {
   display: flex;
@@ -156,6 +179,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-areas:
+    'mode mode'
     'loc type'
     'loc labels'
     'loc .'
@@ -163,7 +187,7 @@
     'constr constr'
     'btn btn';
   /* La rangée vide absorbe la hauteur de « Localisation » : les blocs voisins restent groupés */
-  grid-template-rows: auto auto 1fr auto auto auto;
+  grid-template-rows: auto auto auto 1fr auto auto auto;
   gap: 16px;
   align-items: start;
 }
@@ -224,6 +248,28 @@
   font-size: 1.05em;
 }
 
+/* Mode simple : quatre blocs sur deux colonnes, quelle que soit la largeur */
+.landing .filters form.simple {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    'mode mode'
+    'loc type'
+    'loc labels'
+    'surf labels'
+    'btn btn';
+  grid-template-rows: auto auto auto 1fr auto;
+}
+.landing .filters .mode {
+  grid-area: mode;
+  align-items: center;
+}
+.landing .filters .mode .segmented {
+  align-self: center;
+}
+
 /* Hors 3 colonnes, les conteneurs de colonne s'effacent : leurs blocs suivent la grille */
 .filters .col {
   display: contents;
@@ -231,14 +277,15 @@
 
 /* Très grand écran : trois colonnes, chacune empile ses blocs */
 @media (min-width: 1280px) {
-  .landing .filters form {
+  .landing .filters form:not(.simple) {
     grid-template-columns: 1.1fr 1fr 1fr;
     grid-template-areas:
+      'mode mode mode'
       'loc b c'
       'btn btn btn';
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto;
   }
-  .landing .filters .col {
+  .landing .filters form:not(.simple) .col {
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -252,9 +299,10 @@
 }
 
 @media (max-width: 860px) {
-  .landing .filters form {
+  .landing .filters form,
+  .landing .filters form.simple {
     grid-template-columns: 1fr;
-    grid-template-areas: 'loc' 'type' 'labels' 'surf' 'date' 'constr' 'btn';
+    grid-template-areas: 'mode' 'loc' 'type' 'labels' 'surf' 'date' 'constr' 'btn';
     grid-template-rows: none;
   }
 }
