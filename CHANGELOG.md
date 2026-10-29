@@ -4,17 +4,17 @@ Les évolutions notables de Sherlock Immo. Format inspiré de [Keep a Changelog]
 
 ## [Non publié]
 
+## [1.3.0] — 2026-10-29
+
 ### Ajouté
 
 - **Mode simple** (par défaut) : commune, type de bien, étiquettes énergie et climat, surface. Le **mode avancé** affiche les autres critères (chiffres de l'annonce, date, communes voisines et rayon, construction et équipements). Les critères avancés restent appliqués en mode simple, avec un rappel pour les voir ou les effacer.
 - **Bulle de la carte** refaite : étiquette en grand, adresse, chiffres clés (surface, kWh/m²/an, GES, année), date du DPE, boutons « Fiche DPE » et « Google Maps » ; suit le thème sombre.
-
-- **Appartements et immeubles hébergés** à leur tour : toute la recherche se passe de l'API de l'ADEME (~615 Mo pour la France). Construction en quatre tâches parallèles (une par type, deux pour les appartements).
+- **Appartements et immeubles hébergés** à leur tour : toute la recherche se passe de l'API de l'ADEME (16,7 millions de DPE, ~590 Mo pour la France). Seuls le détail d'une fiche, les audits et les DPE d'avant 2021 l'interrogent encore. Construction en quatre tâches parallèles (une par type, deux pour les appartements).
 
 ### Modifié
 
 - Carte : **photo aérienne par défaut** (on y reconnaît la maison) ; le dernier fond choisi est retenu.
-
 - **Téléphone** : toucher un point ouvre sa bulle (et non la fiche plein écran, qui la cachait), avec un bouton « Ouvrir la fiche » ; barre des résultats plus compacte.
 
 ### Corrigé
@@ -94,6 +94,7 @@ Première version publique.
 - Installable (PWA) sur ordinateur, Android et iOS, thème clair et sombre.
 - Page « Sources et outils ».
 
+[1.3.0]: https://github.com/Mateus17/sherlock-immo/releases/tag/v1.3.0
 [1.2.0]: https://github.com/Mateus17/sherlock-immo/releases/tag/v1.2.0
 [1.1.0]: https://github.com/Mateus17/sherlock-immo/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Mateus17/sherlock-immo/releases/tag/v1.0.0
