@@ -32,7 +32,9 @@ export function disponible(): Promise<IndexMiroir | null> {
         const maison = i as PartieMiroir
         return { version: VERSION_FORMAT, genere_le: maison.genere_le, types: { maison: [maison] } }
       }
-      return i?.version === VERSION_FORMAT ? (i as IndexMiroir) : null
+      // Morceaux en tableau : un index d'avant le découpage des appartements est ignoré
+      const v2 = i?.version === VERSION_FORMAT ? (i as IndexMiroir) : null
+      return v2 && Object.values(v2.types).every(Array.isArray) ? v2 : null
     })
     .catch(() => null)
   return index
