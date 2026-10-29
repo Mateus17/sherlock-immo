@@ -9,8 +9,9 @@
 // dans donnees/index.json. L'adresse est stockée sans « code postal + commune », reconstitués
 // à la lecture. Mesuré : environ 42 octets par maison une fois compressé.
 //
-// Chaque type est construit à part (en parallèle sur GitHub Actions) et décrit par
-// donnees/{dossier}/partie.json ; donnees/index.json les rassemble.
+// Chaque type est construit à part (en parallèle sur GitHub Actions), les appartements en
+// deux moitiés de départements. Chaque morceau est décrit par donnees/{dossier}/partie*.json,
+// avec ses propres dictionnaires ; donnees/index.json les rassemble.
 
 import { ENERGIES, type Dpe, type DpeFilters, type Etiquette, type Source, type TypeBatiment } from '../api/dpe'
 
@@ -57,24 +58,32 @@ export interface Dictionnaires {
   ete: string[]
 }
 
-// Un type de bien construit (donnees/{dossier}/partie.json)
+// Un morceau construit d'un type de bien (donnees/{dossier}/partie*.json)
 export interface PartieMiroir {
   version: number
   genere_le: string // date de construction des fichiers
   maj_ademe: string | null // date de mise à jour de la base ADEME au moment de la construction
   lignes: number
   communes: number
-  // Départements construits ; absent = toute la France. Une construction partielle
-  // (développement, workflow lancé sur quelques départements) n'en couvre que certains.
+  // Départements construits ; absent = toute la France. Une moitié des appartements, ou une
+  // construction partielle (développement, workflow lancé sur quelques départements), n'en
+  // couvre que certains.
   departements?: string[]
   dict: Dictionnaires
 }
 
-// donnees/index.json : les types hébergés ; un type absent passe par l'API
+// donnees/index.json : les morceaux de chaque type hébergé ; un type absent passe par l'API
 export interface IndexMiroir {
   version: number
-  genere_le: string // le plus ancien des types : date affichée dans l'application
-  types: Partial<Record<TypeBatiment, PartieMiroir>>
+  genere_le: string // le plus ancien des morceaux : date affichée dans l'application
+  types: Partial<Record<TypeBatiment, PartieMiroir[]>>
+}
+
+// Morceau qui contient une commune ; aucun : la commune passe par l'API (un fichier absent
+// voudrait dire « aucun logement », à tort)
+export function partieDe(idx: IndexMiroir, type: TypeBatiment, insee: string): PartieMiroir | undefined {
+  const dep = departementDe(insee)
+  return idx.types[type]?.find((p) => !p.departements || p.departements.includes(dep))
 }
 
 export interface FichierCommune {

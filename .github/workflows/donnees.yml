@@ -1,7 +1,7 @@
 # Données hébergées : chaque dimanche, télécharge les DPE depuis l'API de l'ADEME, les découpe
 # par commune (scripts/donnees/construire.ts), les range dans la release « donnees » puis
-# republie le site. Un type de bien par tâche, en parallèle (chacune a droit à 6 h) :
-# environ 1 h pour les maisons, 2 h 30 pour les appartements.
+# republie le site. Une tâche par type de bien, deux pour les appartements (un département sur
+# deux chacune), en parallèle : chacune a droit à 6 h et en prend 1 à 3.
 name: Données hébergées
 
 on:
@@ -29,9 +29,17 @@ jobs:
       # Un type en échec ne publie rien : les données de la semaine précédente restent en ligne
       fail-fast: true
       matrix:
-        type: [maison, appartement, immeuble]
+        include:
+          - { type: maison, nom: maison }
+          - { type: immeuble, nom: immeuble }
+          - { type: appartement, moitie: 1, nom: appartement-1 }
+          - { type: appartement, moitie: 2, nom: appartement-2 }
+    name: construire (${{ matrix.nom }})
     runs-on: ubuntu-latest
     timeout-minutes: 340
+    env:
+      # Paris et la petite couronne en mémoire en même temps : au-delà des 4 Go par défaut
+      NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -39,11 +47,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Télécharger et découper les DPE (${{ matrix.type }})
-        run: npm run donnees -- --types ${{ matrix.type }} --sortie donnees ${{ inputs.departements && format('--departements {0}', inputs.departements) || '' }}
+      - name: Télécharger et découper les DPE (${{ matrix.nom }})
+        run: >-
+          npm run donnees -- --types ${{ matrix.type }} --sortie donnees
+          ${{ matrix.moitie && format('--moitie {0}', matrix.moitie) || '' }}
+          ${{ inputs.departements && format('--departements {0}', inputs.departements) || '' }}
       - uses: actions/upload-artifact@v4
         with:
-          name: donnees-${{ matrix.type }}
+          name: donnees-${{ matrix.nom }}
           path: donnees
           retention-days: 1
           # Fichiers déjà compressés
@@ -81,7 +92,7 @@ jobs:
       # planifiées d'un dépôt public sans activité depuis 60 jours) et date la dernière construction
       - name: Mettre à jour donnees-version.json
         run: |
-          node -e "const i=require('./donnees/index.json');const t=Object.fromEntries(Object.entries(i.types).map(([k,p])=>[k,{lignes:p.lignes,communes:p.communes}]));require('fs').writeFileSync('donnees-version.json',JSON.stringify({genere_le:i.genere_le,types:t},null,2)+'\n')"
+          node -e "const i=require('./donnees/index.json');const t=Object.fromEntries(Object.entries(i.types).map(([k,ps])=>[k,{lignes:ps.reduce((n,p)=>n+p.lignes,0),communes:ps.reduce((n,p)=>n+p.communes,0)}]));require('fs').writeFileSync('donnees-version.json',JSON.stringify({genere_le:i.genere_le,types:t},null,2)+'\n')"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add donnees-version.json

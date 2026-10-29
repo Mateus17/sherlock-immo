@@ -5,14 +5,18 @@
 //   npm run donnees -- --departements 35            → public/donnees (servi par `npm run dev`)
 //   npm run donnees -- --types maison --sortie donnees   → maisons de toute la France (≈ 1 h)
 //   npm run donnees -- --assembler --sortie donnees      → index.json à partir des types construits
+//   --parallele 4 : départements téléchargés en même temps (4 par défaut)
+//   --moitie 1|2  : un département sur deux seulement (les appartements tiennent ainsi dans
+//                   deux tâches GitHub de moins de 6 h chacune)
 //
-// Chaque type construit écrit donnees/{dossier}/partie.json ; l'assemblage les réunit dans
-// donnees/index.json (le script le fait aussi à la fin de chaque construction).
+// Chaque construction écrit donnees/{dossier}/partie.json (partie-1.json, partie-2.json pour
+// une moitié) ; l'assemblage les réunit dans donnees/index.json (le script le fait aussi à la
+// fin de chaque construction).
 //
 // L'API de l'ADEME limite le temps de calcul par utilisateur : le script avance page par page
 // (10 000 lignes), sans compter le total, et attend quand l'API le demande (erreur 429).
 
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import type { TypeBatiment } from '../../src/api/dpe'
@@ -52,7 +56,11 @@ function argument(nom: string): string | undefined {
 }
 
 const sortie = argument('sortie') ?? 'public/donnees'
-const departements = argument('departements')?.split(',') ?? TOUS_DEPARTEMENTS
+const moitie = argument('moitie')
+const departements = (argument('departements')?.split(',') ?? TOUS_DEPARTEMENTS).filter(
+  (_, i) => !moitie || i % 2 === Number(moitie) - 1,
+)
+const complet = !moitie && !argument('departements')
 const types = (argument('types')?.split(',') ?? TOUS_TYPES) as TypeBatiment[]
 const attendre = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -76,13 +84,27 @@ async function page(url: string): Promise<{ results: LigneAdeme[]; next?: string
   }
 }
 
+// Départements téléchargés en même temps : l'API n'a jamais freiné la construction (aucune
+// erreur 429)
+const PARALLELE = Number(argument('parallele') ?? 4)
+
 async function construire(type: TypeBatiment, majAdeme: string | null) {
   const debut = Date.now()
+  // Partagés par tous les départements (un seul processus : les numéros restent cohérents)
   const dict: Dictionnaires = { periodes: [], energies: [], ete: [] }
-  const communes = new Map<string, FichierCommune>()
+  const dossier = join(sortie, DOSSIERS[type])
+  const fichierPartie = join(dossier, moitie ? `partie-${moitie}.json` : 'partie.json')
+  // Une moitié ne remplace que ses départements : l'autre peut être dans le même dossier
+  if (moitie) for (const dep of departements) rmSync(join(dossier, dep), { recursive: true, force: true })
+  else rmSync(dossier, { recursive: true, force: true })
   let total = 0
+  let nbCommunes = 0
+  let octets = 0
 
-  for (const dep of departements) {
+  // Un département : téléchargé, écrit sur disque puis libéré. Garder toute la France en
+  // mémoire dépassait les 4 Go de Node pour les appartements.
+  async function departement(dep: string) {
+    const communes = new Map<string, FichierCommune>()
     for (const base of BASES) {
       const params = new URLSearchParams({
         size: '10000',
@@ -111,51 +133,57 @@ async function construire(type: TypeBatiment, majAdeme: string | null) {
       total += n
       console.log(`${type} ${dep} ${base.source} : ${n} (cumul ${total}, ${Math.round((Date.now() - debut) / 1000)} s)`)
     }
+    for (const f of communes.values()) {
+      // Plus récents d'abord : l'ordre d'affichage par défaut
+      f.lignes.sort((a, b) => String(b[1] ?? '').localeCompare(String(a[1] ?? '')))
+      const chemin = join(sortie, cheminCommune(f.insee, type))
+      mkdirSync(join(chemin, '..'), { recursive: true })
+      const gz = gzipSync(JSON.stringify(f), { level: 9 })
+      writeFileSync(chemin, gz)
+      octets += gz.length
+    }
+    nbCommunes += communes.size
   }
 
-  const dossier = join(sortie, DOSSIERS[type])
-  rmSync(dossier, { recursive: true, force: true })
-  let octets = 0
-  for (const f of communes.values()) {
-    // Plus récents d'abord : l'ordre d'affichage par défaut
-    f.lignes.sort((a, b) => String(b[1] ?? '').localeCompare(String(a[1] ?? '')))
-    const chemin = join(sortie, cheminCommune(f.insee, type))
-    mkdirSync(join(chemin, '..'), { recursive: true })
-    const gz = gzipSync(JSON.stringify(f), { level: 9 })
-    writeFileSync(chemin, gz)
-    octets += gz.length
-  }
+  const file = [...departements]
+  await Promise.all(
+    Array.from({ length: Math.min(PARALLELE, file.length) }, async () => {
+      for (let dep = file.shift(); dep; dep = file.shift()) await departement(dep)
+    }),
+  )
 
   const partie: PartieMiroir = {
     version: VERSION_FORMAT,
     genere_le: new Date().toISOString(),
     maj_ademe: majAdeme,
     lignes: total,
-    communes: communes.size,
-    ...(departements === TOUS_DEPARTEMENTS ? {} : { departements }),
+    communes: nbCommunes,
+    ...(complet ? {} : { departements }),
     dict,
   }
   mkdirSync(dossier, { recursive: true })
-  writeFileSync(join(dossier, 'partie.json'), JSON.stringify(partie))
+  writeFileSync(fichierPartie, JSON.stringify(partie))
   console.log(
-    `Terminé (${type}) : ${total} DPE, ${communes.size} communes, ${(octets / 1e6).toFixed(1)} Mo, ` +
+    `Terminé (${type}) : ${total} DPE, ${nbCommunes} communes, ${(octets / 1e6).toFixed(1)} Mo, ` +
       `${Math.round((Date.now() - debut) / 60_000)} min → ${dossier}`,
   )
 }
 
-// Réunit les types construits (donnees/{dossier}/partie.json) dans donnees/index.json
+// Réunit les morceaux construits (donnees/{dossier}/partie*.json) dans donnees/index.json
 function assembler() {
   const index: IndexMiroir = { version: VERSION_FORMAT, genere_le: '', types: {} }
   for (const type of TOUS_TYPES) {
-    const chemin = join(sortie, DOSSIERS[type], 'partie.json')
-    if (!existsSync(chemin)) continue
-    const partie = JSON.parse(readFileSync(chemin, 'utf8')) as PartieMiroir
-    if (partie.version !== VERSION_FORMAT) continue
-    index.types[type] = partie
-    if (!index.genere_le || partie.genere_le < index.genere_le) index.genere_le = partie.genere_le
+    const dossier = join(sortie, DOSSIERS[type])
+    if (!existsSync(dossier)) continue
+    for (const nom of readdirSync(dossier).filter((n) => /^partie(-\d)?\.json$/.test(n))) {
+      const partie = JSON.parse(readFileSync(join(dossier, nom), 'utf8')) as PartieMiroir
+      if (partie.version !== VERSION_FORMAT) continue
+      ;(index.types[type] ??= []).push(partie)
+      if (!index.genere_le || partie.genere_le < index.genere_le) index.genere_le = partie.genere_le
+    }
   }
   writeFileSync(join(sortie, 'index.json'), JSON.stringify(index))
-  const resume = Object.entries(index.types).map(([t, p]) => `${t} ${p.lignes}`)
+  const resume = Object.entries(index.types).map(([t, ps]) => `${t} ${ps.reduce((n, p) => n + p.lignes, 0)}`)
   console.log(`Index : ${resume.join(', ') || 'aucun type'} → ${join(sortie, 'index.json')}`)
 }
 

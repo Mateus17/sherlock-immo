@@ -12,8 +12,8 @@ import {
   cheminCommune,
   coordonnees,
   decoderLigne,
-  departementDe,
   filtrerLignes,
+  partieDe,
   type FichierCommune,
   type IndexMiroir,
   type PartieMiroir,
@@ -30,7 +30,7 @@ export function disponible(): Promise<IndexMiroir | null> {
       // Format 1 : maisons seules, index à la racine ; mêmes fichiers et mêmes colonnes qu'en 2
       if (i?.version === 1) {
         const maison = i as PartieMiroir
-        return { version: VERSION_FORMAT, genere_le: maison.genere_le, types: { maison } }
+        return { version: VERSION_FORMAT, genere_le: maison.genere_le, types: { maison: [maison] } }
       }
       return i?.version === VERSION_FORMAT ? (i as IndexMiroir) : null
     })
@@ -41,7 +41,7 @@ export function disponible(): Promise<IndexMiroir | null> {
 // Types de bien hébergés parmi ceux demandés
 export async function typesHeberges(types: TypeBatiment[]): Promise<TypeBatiment[]> {
   const idx = await disponible()
-  return idx ? types.filter((t) => idx.types[t]) : []
+  return idx ? types.filter((t) => idx.types[t]?.length) : []
 }
 
 // Selon le serveur, un .gz arrive compressé (GitHub Pages : application/gzip) ou déjà
@@ -53,11 +53,6 @@ async function lireGzip(octets: ArrayBuffer): Promise<string> {
   const flux = new Blob([octets]).stream().pipeThrough(new DecompressionStream('gzip'))
   return new Response(flux).text()
 }
-
-// La commune est-elle dans les données hébergées ? Sinon, c'est à l'API de répondre :
-// un fichier absent voudrait dire « aucun logement », à tort.
-const couvre = (partie: PartieMiroir, insee: string) =>
-  !partie.departements || partie.departements.includes(departementDe(insee))
 
 const fichiers = new Map<string, Promise<FichierCommune | null>>()
 
@@ -103,15 +98,15 @@ export async function rechercher(
   }
   const codes = [...new Set(choisies.flatMap((c) => codesInsee(c.code)))]
   if (signal?.aborted) throw new DOMException('Abandon', 'AbortError')
-  if (!types.every((t) => idx.types[t] && codes.every((c) => couvre(idx.types[t]!, c)))) return null
+  if (!types.every((t) => codes.every((c) => partieDe(idx, t, c)))) return null
 
   return Promise.all(
     types.map(async (type) => {
-      const { dict } = idx.types[type]!
       const lus = await Promise.all(codes.map((c) => commune(c, type)))
       const resultat: ResultatMiroir = { type, existants: [], neufs: [] }
       for (const f of lus) {
         if (!f) continue
+        const { dict } = partieDe(idx, type, f.insee)!
         for (const l of filtrerLignes(f.lignes, filters, dict)) {
           const d = decoderLigne(l, f, dict, type)
           if (filters.rayonKm) {
@@ -133,9 +128,9 @@ export async function rechercher(
 // récent ; null si ce type ou cette commune ne sont pas couverts par les données hébergées
 export async function historique(identifiantBan: string, type: TypeBatiment): Promise<Dpe[] | null> {
   const idx = await disponible()
-  const partie = idx?.types[type]
   const insee = identifiantBan.split('_')[0]
-  if (!partie || !couvre(partie, insee)) return null
+  const partie = idx && partieDe(idx, type, insee)
+  if (!partie) return null
   const f = await commune(insee, type)
   if (!f) return []
   return f.lignes

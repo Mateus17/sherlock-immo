@@ -64,7 +64,7 @@ onMounted(async () => {
   const idx = await miroirDisponible()
   if (idx) {
     miroirDu.value = idx.genere_le
-    updatedAt.value = Object.values(idx.types)[0]?.maj_ademe ?? null
+    updatedAt.value = Object.values(idx.types)[0]?.[0]?.maj_ademe ?? null
   } else updatedAt.value = await getDatasetUpdatedAt()
 })
 </script>

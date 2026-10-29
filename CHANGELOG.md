@@ -9,7 +9,7 @@ Les évolutions notables de Sherlock Immo. Format inspiré de [Keep a Changelog]
 - **Mode simple** (par défaut) : commune, type de bien, étiquettes énergie et climat, surface. Le **mode avancé** affiche les autres critères (chiffres de l'annonce, date, communes voisines et rayon, construction et équipements). Les critères avancés restent appliqués en mode simple, avec un rappel pour les voir ou les effacer.
 - **Bulle de la carte** refaite : étiquette en grand, adresse, chiffres clés (surface, kWh/m²/an, GES, année), date du DPE, boutons « Fiche DPE » et « Google Maps » ; suit le thème sombre.
 
-- **Appartements et immeubles hébergés** à leur tour : toute la recherche se passe de l'API de l'ADEME (~615 Mo pour la France). Construction en trois tâches parallèles, une par type de bien.
+- **Appartements et immeubles hébergés** à leur tour : toute la recherche se passe de l'API de l'ADEME (~615 Mo pour la France). Construction en quatre tâches parallèles (une par type, deux pour les appartements).
 
 ### Modifié
 
