@@ -1,17 +1,17 @@
 {
-  "genere_le": "2026-10-28T17:28:44.064Z",
+  "genere_le": "2026-10-29T07:10:12.633Z",
   "types": {
     "maison": {
-      "lignes": 23,
-      "communes": 9
+      "lignes": 46,
+      "communes": 17
     },
     "appartement": {
-      "lignes": 87,
-      "communes": 8
+      "lignes": 107,
+      "communes": 13
     },
     "immeuble": {
-      "lignes": 1,
-      "communes": 1
+      "lignes": 3,
+      "communes": 2
     }
   }
 }
