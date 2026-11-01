@@ -52,7 +52,7 @@ jobs:
           npm run donnees -- --types ${{ matrix.type }} --sortie donnees
           ${{ matrix.moitie && format('--moitie {0}', matrix.moitie) || '' }}
           ${{ inputs.departements && format('--departements {0}', inputs.departements) || '' }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: donnees-${{ matrix.nom }}
           path: donnees
@@ -70,7 +70,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: donnees-*
           path: donnees
